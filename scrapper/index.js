@@ -1,58 +1,37 @@
-// Imports the Google Cloud client library
 const Datastore = require('@google-cloud/datastore')
-
-// Your Google Cloud Platform project ID
 const projectId = 'pirula-time'
-
-// Instantiates a client
 const datastore = Datastore({
   projectId: projectId
 })
 
-// The kind for the new entity
 const kind = 'time'
-// The name/ID for the new entity
-const name = 'average'
-// The Cloud Datastore key for the new entity
-const key = datastore.key([kind, name])
+const averageKey = datastore.key([kind, 'average'])
 
 function scrape() {
   const data = {
-    average: 3200,
+    average: 1800,
   }
   return data
 }
 
-/**
- * Triggered from a message on a Cloud Pub/Sub topic.
- *
- * @param {!Object} event The Cloud Functions event.
- * @param {!Function} The callback function.
- */
-exports.subscribe = function subscribe(event, callback) {
-  console.log("START")
-  // The Cloud Pub/Sub Message object.
-  const pubsubMessage = event.data
+exports.doIt = function doIt(req, res) {
+  console.log("DOIN' IT!")
+  const message = req.body.message
 
   const data = scrape()
 
-  // Prepares the new entity
-  const average = {
-    key: key,
+  const saveData = {
+    key: averageKey,
     data: {
       val: data.average
     }
   }
 
-  // Saves the entity
-  datastore.save(average)
+  datastore.save(saveData)
     .then(() => {
-      console.log(`Saved ${average.key.name}: ${average.data}`)
+      res.status(200).send(`Saved ${JSON.stringify(saveData)}`)
     })
     .catch((err) => {
-      console.error('ERROR:', err)
+      res.status(500).send('Error: ' + err.toString())
     })
-
-  // Don't forget to call the callback.
-  callback()
-};
+}
