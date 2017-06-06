@@ -1,0 +1,3 @@
+cron:
+- url: /runScrape
+  schedule: every 1 hours
