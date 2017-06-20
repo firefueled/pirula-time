@@ -1,22 +1,16 @@
-const http = require('http');
-
-const hostname = '127.0.0.1';
-const port = 3000;
-
+const Https = require('https');
 const Datastore = require('@google-cloud/datastore')
 const QueryString = require('querystring');
-const Net = require('net')
-
-const projectId = 'pirula-time'
-const datastore = Datastore({ projectId: projectId })
-const kind = 'time'
-const averageKey = datastore.key([kind, 'average'])
-
-const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
-const apiKey = "XXX"
 
 const playlistItemsUrl = 'https://www.googleapis.com/youtube/v3/playlistItems?'
 const videosUrl = 'https://www.googleapis.com/youtube/v3/videos?'
+const apiKey = 'XXX'
+const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
+const projectId = 'pirula-time'
+const kind = 'time'
+
+const datastore = Datastore({ projectId: projectId })
+const averageKey = datastore.key([kind, 'average'])
 
 const durationRe = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/
 function parseDuration(str) {
@@ -30,7 +24,7 @@ function parseDuration(str) {
 
 function extractVideoIds(data) {
   ids = data.items.map(item => {
-    return contentDetails.videoId
+    return item.contentDetails.videoId
   })
   return ids.join(',')
 }
@@ -44,11 +38,10 @@ function sumVideoDurations(data) {
 }
 
 function scrape() {
-  const data = {
-    average: 2000
+  let data = {
   }
 
-  playlistItemsParamsObj = {
+  let playlistItemsParamsObj = {
     key: apiKey,
     playlistId: channelId,
     maxResults: 50,
@@ -56,80 +49,95 @@ function scrape() {
     fields: 'items/contentDetails/videoId,nextPageToken,pageInfo'
   }
 
-  videosDurationParamsObj = {
+  let videosDurationParamsObj = {
     key: apiKey,
     part: 'contentDetails',
     fields: 'items/contentDetails/duration'
   }
 
-  nextPageToken = null
+  let nextPageToken = null
+  let totalDuration = 0
 
-  Promise.all(
-    // parse only the first 200 videos
-    [0, 1, 2, 3].forEach(i => {
-      if (i == 0 || nextPageToken) {
-        playlistItemsParamsObj.nextPageToken = nextPageToken
-        const playlistItemsParams = QueryString.stringify(playlistItemsParamsObj)
+  // parse only the first 200 videos
+  // 50 per page
+  let maxVideos = 200
 
-        const videoIdsUrl = `${playlistItemsUrl}${playlistItemsParams}`
+  const sumVideoInfo = (videoCount = 0) => {
+    if (videoCount < maxVideos) {
 
-        client = Net.connect(videoIdsUrl)
-        client.on('data', videoIdsData => {
-          if (videoIdsData) {
-            console.log(videoIdsData)
-            videoIdsData = JSON.parse(videoIdsData)
-            nextPageToken = videoIdsData.nextPageToken
+      return new Promise((resolve, reject) => {
+        if (videoCount == 0 || nextPageToken) {
+          playlistItemsParamsObj.nextPageToken = nextPageToken
+          const playlistItemsParams = QueryString.stringify(playlistItemsParamsObj)
+          const videoIdsUrl = `${playlistItemsUrl}${playlistItemsParams}`
 
-            const videoIds = extractVideoIds(videoIdsData)
+          new Promise((resolve, reject) => {
+            Https.get(videoIdsUrl, res => {
+              res.setEncoding('utf8');
+              let rawData = '';
+              res.on('data', chunk => rawData += chunk);
+              res.on('end', () => resolve(rawData))
+            })
+          }).then(videoIdsData => {
+            new Promise((resolve, reject) => {
+              videoIdsData = JSON.parse(videoIdsData)
+              nextPageToken = videoIdsData.nextPageToken
 
-            const videosDurationParams = QueryString.stringify(videosDurationParamsObj)
-            videosDurationParamsObj.id = videoIds
+              const videoIds = extractVideoIds(videoIdsData)
+              videosDurationParamsObj.id = videoIds
+              const videosDurationParams = QueryString.stringify(videosDurationParamsObj)
+              const videosDurationUrl = `${videosUrl}${videosDurationParams}`
 
-            const videosDurationUrl = `${videosUrl}${videosDurationParams}`
-
-            Promise.all(Net.connect(videosDurationUrl).on('data', durationData => {
-              if (durationData) {
-                durationData = JSON.parse(durationData)
-                data.average += sumVideoDurations(durationData)
-              }
-            }))
-          }
-        })
-        client.on('end', () => {
-        })
-      }
-    })
-  )
-
-  return data
-}
-
-exports.doIt = function doIt(req, res) {
-  const data = scrape()
-
-  const saveData = {
-    key: averageKey,
-    data: {
-      val: data.average
+              Https.get(videosDurationUrl, res => {
+                res.setEncoding('utf8');
+                let rawData = '';
+                res.on('data', chunk => rawData += chunk);
+                res.on('end', () => resolve(rawData))
+              })
+            }).then(durationData => {
+              durationData = JSON.parse(durationData)
+              totalDuration += sumVideoDurations(durationData)
+              videoCount += durationData.items.length
+              resolve(sumVideoInfo(videoCount))
+            })
+          })
+        }
+      })
+    } else {
+      return videoCount
     }
   }
 
-  datastore.save(saveData)
-    .then(() => {
-      res.status(200).send(`Saved ${JSON.stringify(saveData)}`)
-    })
-    .catch((err) => {
-      res.status(500).send('Error: ' + err.toString())
-    })
-  res.end("Done now\n")
+  sumVideoInfo().then(videoCount => {
+    data.average = Math.ceil(totalDuration / videoCount)
+
+    const saveData = {
+      key: averageKey,
+      data: {
+        val: data.average
+      }
+    }
+
+    datastore.save(saveData)
+  })
 }
 
+exports.doIt = function doIt(req, res) {
+  scrape()
+  res.end('scraping')
+}
+
+const http = require('http');
 const server = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'text/plain');
-  this.doIt(req, res)
+  if (req.url == '/scrape') {
+    this.doIt(req, res)
+  } else {
+    res.end()
+  }
 });
 
+const hostname = '127.0.0.1';
+const port = 3000;
 server.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
 });
