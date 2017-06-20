@@ -1,10 +1,10 @@
 const Https = require('https');
 const Datastore = require('@google-cloud/datastore')
 const QueryString = require('querystring');
+const Secrets = require('./secrets.js')
 
 const playlistItemsUrl = 'https://www.googleapis.com/youtube/v3/playlistItems?'
 const videosUrl = 'https://www.googleapis.com/youtube/v3/videos?'
-const apiKey = 'XXX'
 const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
 const projectId = 'pirula-time'
 const kind = 'time'
@@ -42,7 +42,7 @@ function scrape() {
   }
 
   let playlistItemsParamsObj = {
-    key: apiKey,
+    key: Secrets.apiKey,
     playlistId: channelId,
     maxResults: 50,
     part: 'contentDetails',
@@ -50,7 +50,7 @@ function scrape() {
   }
 
   let videosDurationParamsObj = {
-    key: apiKey,
+    key: Secrets.apiKey,
     part: 'contentDetails',
     fields: 'items/contentDetails/duration'
   }
