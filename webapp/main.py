@@ -1,26 +1,27 @@
-# Copyright 2016 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+from flask import Flask, render_template, request
+from google.appengine.ext import ndb
 
-import webapp2
+app = Flask(__name__)
 
+project_id = "pirula-time"
+# datastore = Google::Cloud::Datastore.new project: project_id
+# scrapeUri = URI("https://us-central1-pirula-time.cloudfunctions.net/doIt")
+class Account(ndb.Model):
+    username = ndb.StringProperty()
+    userid = ndb.IntegerProperty()
+    email = ndb.StringProperty()
 
-class MainPage(webapp2.RequestHandler):
-    def get(self):
-        self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Hello, World!')
+@app.route('/')
+def root():
+    sandy = Account(
+        username='Sandy', userid=123, email='sandy@example.com')
+    sandy_key = sandy.put()
 
+    # average_entity = ndb.Key(urlsafe='ag1wfnBpcnVsYS10aW1lchELEgR0aW1lIgdhdmVyYWdlDA')
 
-app = webapp2.WSGIApplication([
-    ('/', MainPage),
-], debug=True)
+    # average = average_entity.get()
+    # # average = [average/60, average%60]
+
+    return sandy_key
+    # self.response.write("1 unidade de tempo Pirula equivale a {} minutos e {} segundos".
+    #     format(average[0], average[1]))
