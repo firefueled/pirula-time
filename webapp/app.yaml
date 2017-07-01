@@ -1,11 +1,7 @@
-runtime: ruby
-env: flex
-entrypoint: bundle exec ruby app.rb
-automatic_scaling:
-  min_num_instances: 1
-  max_num_instances: 10
-health_check:
-  enable_health_check: True
-  check_interval_sec: 5
+runtime: python27
+api_version: 1
+threadsafe: true
 
-
+handlers:
+- url: /.*
+  script: main.app
