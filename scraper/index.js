@@ -7,10 +7,9 @@ const playlistItemsUrl = 'https://www.googleapis.com/youtube/v3/playlistItems?'
 const videosUrl = 'https://www.googleapis.com/youtube/v3/videos?'
 const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
 const projectId = 'pirula-time'
-const kind = 'time'
 
 const datastore = Datastore({ projectId: projectId })
-const averageKey = datastore.key([kind, 'average'])
+const averageKey = datastore.key(['AggregateData', 'averageDuration'])
 
 const durationRe = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/
 function parseDuration(str) {

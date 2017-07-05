@@ -1,27 +1,37 @@
 from flask import Flask, render_template, request
 from google.appengine.ext import ndb
+from httplib import HTTPSConnection
+import logging
 
 app = Flask(__name__)
 
-project_id = "pirula-time"
-# datastore = Google::Cloud::Datastore.new project: project_id
-# scrapeUri = URI("https://us-central1-pirula-time.cloudfunctions.net/doIt")
-class Account(ndb.Model):
-    username = ndb.StringProperty()
-    userid = ndb.IntegerProperty()
-    email = ndb.StringProperty()
+@app.before_request
+def enable_local_error_handling():
+    app.logger.addHandler(logging.StreamHandler())
+    app.logger.setLevel(logging.INFO)
+
+class AggregateData(ndb.Model):
+    val = ndb.IntegerProperty()
+
+def getData():
+    data = {}
+
+    key = ndb.Key(AggregateData, 'averageDuration')
+    res = key.get()
+
+    data['averageDuration'] = res.val
+    return data
 
 @app.route('/')
 def root():
-    sandy = Account(
-        username='Sandy', userid=123, email='sandy@example.com')
-    sandy_key = sandy.put()
+    data = getData()
+    minutes, seconds = data['averageDuration']/60, data['averageDuration']%60
 
-    # average_entity = ndb.Key(urlsafe='ag1wfnBpcnVsYS10aW1lchELEgR0aW1lIgdhdmVyYWdlDA')
+    return 'Um Pirula equivale a {} minutos e {} segundos\n'.format(minutes, seconds)
 
-    # average = average_entity.get()
-    # # average = [average/60, average%60]
-
-    return sandy_key
-    # self.response.write("1 unidade de tempo Pirula equivale a {} minutos e {} segundos".
-    #     format(average[0], average[1]))
+# @app.route('/runScrape')
+# def runScrape():
+#     conn = HTTPSConnection('us-central1-pirula-time.cloudfunctions.net')
+#     conn.request('GET', '/doIt')
+#     resp = conn.getresponse()
+#     return resp.status
