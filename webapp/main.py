@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 from google.appengine.ext import ndb
-from httplib import HTTPSConnection
+import httplib
 import logging
 
 app = Flask(__name__)
@@ -19,19 +19,25 @@ def getData():
     key = ndb.Key(AggregateData, 'averageDuration')
     res = key.get()
 
-    data['averageDuration'] = res.val
-    return data
+    if (res != None):
+        data['averageDuration'] = res.val
+        return data
+    else:
+        return None
 
 @app.route('/')
 def root():
     data = getData()
-    minutes, seconds = data['averageDuration']/60, data['averageDuration']%60
 
-    return 'Um Pirula equivale a {} minutos e {} segundos\n'.format(minutes, seconds)
+    if (data != None):
+        minutes, seconds = data['averageDuration']/60, data['averageDuration']%60
+        return 'Um Pirula equivale a {} minutos e {} segundos\n'.format(minutes, seconds)
+    else:
+        return 'Oops'
 
-# @app.route('/runScrape')
-# def runScrape():
-#     conn = HTTPSConnection('us-central1-pirula-time.cloudfunctions.net')
-#     conn.request('GET', '/doIt')
-#     resp = conn.getresponse()
-#     return resp.status
+@app.route('/runScrape')
+def runScrape():
+    conn = httplib.HTTPSConnection('us-central1-pirula-time.cloudfunctions.net')
+    conn.request('GET', '/doIt')
+    resp = conn.getresponse()
+    return resp.read()

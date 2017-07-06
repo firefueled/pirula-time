@@ -22,14 +22,14 @@ function parseDuration(str) {
 }
 
 function extractVideoIds(data) {
-  ids = data.items.map(item => {
+  const ids = data.items.map(item => {
     return item.contentDetails.videoId
   })
   return ids.join(',')
 }
 
 function sumVideoDurations(data) {
-  sum = 0
+  let sum = 0
   data.items.forEach(item => {
     sum += parseDuration(item.contentDetails.duration)
   })
