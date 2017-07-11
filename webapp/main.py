@@ -31,7 +31,7 @@ def root():
 
     if (data != None):
         minutes, seconds = data['averageDuration']/60, data['averageDuration']%60
-        return 'Um Pirula equivale a {} minutos e {} segundos\n'.format(minutes, seconds)
+        return render_template('index.html', {})
     else:
         return 'Oops'
 
