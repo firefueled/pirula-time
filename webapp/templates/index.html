@@ -9,8 +9,6 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
-
   <link rel="stylesheet" href="../assets/css/normalize.css">
   <link rel="stylesheet" href="../assets/css/skeleton.css">
   <link rel="stylesheet" href="../assets/css/custom.css">
@@ -26,7 +24,7 @@
     <div class="container">
       <div class="row">
         <div class="two-thirds column">
-          <h4 class="hero-heading">Um Pirula equivale {{ minutes }}22 minutos e {{ seconds }}15 segundos.</h4>
+          <h4>Um Pirula equivale {{ averageDurationMin }} minutos e {{ averageDurationSec }} segundos.</h4>
         </div>
         <div class="one-third column">
           <img src="../assets/images/pirula.jpg">
@@ -39,8 +37,8 @@
     <div class="container">
       <div class="row">
         <div class="two-thirds column">
-          <h4 class="value-multiplier">Seu Último video teve {{ lastestDurationPirula }}1,8 Pirulas de duração</h4>
-          <h5 class="value-heading">{{ latestDurationSubjective }} Meero...</h5>
+          <h4>Seu Último video teve {{ latestPirulaDuration }} Pirulas de duração</h4>
+          <h5>{{ latestDurationSubjective }}</h5>
         </div>
         <div class="one-third column">
           <img src="../assets/images/pirula-magic.png">
@@ -53,8 +51,8 @@
     <div class="container">
       <div class="row">
         <div class="two-thirds column">
-          <h4 class="section-heading">Mais {{ latestHate }}1.205 pessoas ODEIAM o Pirula por causa do seu último video</h4>
-          <p class="section-description">{{ latestHateSubjective }}</p>
+          <h4>Mais {{ latestHate }} pessoas ODEIAM o Pirula por causa do seu último video</h4>
+          <h5>{{ latestHateSubjective }}</p>
         </div>
         <div class="one-third column">
           <img src="../assets/images/pirula-bad.png">
@@ -67,7 +65,9 @@
     <div class="container">
       <div class="row">
         <div class="two-thirds column">
-          <h4 class="section-heading">Como foram os seus os 5 videos mais recentes?{{ fiveLatestQuality }}</h4>
+          <h4>Como estão seus 6 videos mais recentes?</h4>
+          {% block latestSix scoped %}
+          {% endblock %}
         </div>
         <div class="one-third column">
           <img src="../assets/images/pirula-meero.png">
@@ -75,6 +75,5 @@
       </div>
     </div>
   </div>
-
 </body>
 </html>

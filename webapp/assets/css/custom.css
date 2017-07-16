@@ -1,5 +1,9 @@
+body {
+  font-family: sans-serif;
+}
+
 .section {
-  padding: 8rem 0 7rem;
+  padding: 8rem 0 0;
   text-align: center;
   height: 400px;
 }
