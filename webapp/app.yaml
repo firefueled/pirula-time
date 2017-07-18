@@ -3,8 +3,7 @@ api_version: 1
 threadsafe: true
 
 handlers:
-- url: /
-  script: main.app
-
-- url: /assets
+- url: /assets/*
   static_dir: assets
+- url: /.*
+  script: main.app

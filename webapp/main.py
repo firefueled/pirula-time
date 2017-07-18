@@ -1,5 +1,4 @@
 # coding= utf-8
-
 from flask import Flask, render_template, request
 from google.appengine.ext import ndb
 import httplib
@@ -15,6 +14,7 @@ def enable_local_error_handling():
 class AggregateData(ndb.Model):
     averageDuration = ndb.IntegerProperty()
     latestDuration = ndb.IntegerProperty()
+    latestHate = ndb.IntegerProperty()
     latestLikes = ndb.JsonProperty()
     latestDislikes = ndb.JsonProperty()
 
@@ -37,34 +37,34 @@ def getData():
         data['latestPirulaDuration'] = '{:.2}'.format(latestPirulaDuration)
 
         if latestPirulaDuration >= 1.5:
-            data['latestDurationSubjective'] = 'Hmmm... Delícia!'
+            data['latestDurationSubjective'] = u'Hmmm... Delícia!'
         elif latestPirulaDuration >= 1:
-            data['latestDurationSubjective'] = 'Bacana!'
+            data['latestDurationSubjective'] = u'Bacana!'
         elif latestPirulaDuration >= 0.5:
-            data['latestDurationSubjective'] = 'Meero...'
+            data['latestDurationSubjective'] = u'Meero...'
         elif latestPirulaDuration < 0.5:
-            if latestPirulaDuration > 0.4:
-                data['latestDurationSubjective'] = 'Vamo comer salgadinho?'
-            data['latestDurationSubjective'] = 'O que é isso, Ricardo!?...'
+            if latestPirulaDuration >= 0.4:
+                data['latestDurationSubjective'] = u'Vamo comer salgadinho?'
+            data['latestDurationSubjective'] = u'O que é isso, Ricardo!?...'
         elif latestPirulaDuration <= 0.3:
-            data['latestDurationSubjective'] = 'Ai que Burro. Dá zero pra ele'
+            data['latestDurationSubjective'] = u'Ai que Burro. Dá zero pra ele'
 
         if latestHate >= 25000:
-            data['latestHateSubjective'] = 'Tá bom! Sou evangélico agora.'
+            data['latestHateSubjective'] = u'Tá bom! Sou evangélico agora.'
         elif latestHate >= 15000:
-            data['latestHateSubjective'] = 'OK OK! A terra é plana. Satifeitos?'
+            data['latestHateSubjective'] = u'OK OK! A terra é plana. Satifeitos?'
         elif latestHate >= 7000:
-            data['latestHateSubjective'] = 'Se segura que lá vem chumbo!'
+            data['latestHateSubjective'] = u'Se segura que lá vem chumbo!'
         elif latestHate >= 5000:
-            data['latestHateSubjective'] = 'Ai meu Senhor Jesus...'
+            data['latestHateSubjective'] = u'Ai meu Senhor Jesus...'
         elif latestHate >= 3500:
-            data['latestHateSubjective'] = 'O canal é meu, viu!!?'
+            data['latestHateSubjective'] = u'O canal é meu, viu!!?'
         elif latestHate >= 1000:
-            data['latestHateSubjective'] = 'Haters gonna hate...'
+            data['latestHateSubjective'] = u'Haters gonna hate...'
         elif latestHate > 500:
-            data['latestHateSubjective'] = 'Acho que ouvi algum zunido...'
+            data['latestHateSubjective'] = u'Acho que ouvi algum zunido...'
         elif latestHate <= 500:
-            data['latestHateSubjective'] = 'Nem faz cócegas...'
+            data['latestHateSubjective'] = u'Nem faz cócegas...'
 
         latestSixQuality = []
         for i in range(0, 5):
@@ -82,7 +82,7 @@ def root():
     if (data != None):
         return render_template('index.html', **data)
     else:
-        return 'Oopps. Algum terraplanista tá me sabotando...'
+        return u'Oopps. Algum terraplanista tá me sabotando...'
 
 @app.route('/runScrape')
 def runScrape():
