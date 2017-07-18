@@ -9,7 +9,8 @@ const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
 const projectId = 'pirula-time'
 
 const datastore = Datastore({ projectId: projectId })
-const averageKey = datastore.key(['AggregateData', 'averageDuration'])
+const averageKey = datastore.key(['AggregateData', 'lonelyone'])
+let data = {}
 
 const durationRe = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/
 function parseDuration(str) {
@@ -28,6 +29,18 @@ function extractVideoIds(data) {
   return ids.join(',')
 }
 
+function gatherLatestData(videoData) {
+  data.latestDuration = parseDuration(videoData.items[0].contentDetails.duration)
+  data.latestHate = videoData.items[0].statistics.dislikeCount
+  data.latestDislikes = []
+  data.latestLikes = []
+
+  videoData.items.slice(0, 6).forEach(item => {
+    data.latestLikes.push(Number(item.statistics.likeCount))
+    data.latestDislikes.push(Number(item.statistics.dislikeCount))
+  })
+}
+
 function sumVideoDurations(data) {
   let sum = 0
   data.items.forEach(item => {
@@ -37,8 +50,6 @@ function sumVideoDurations(data) {
 }
 
 function scrape() {
-  let data = {
-  }
 
   let playlistItemsParamsObj = {
     key: Secrets.apiKey,
@@ -50,8 +61,8 @@ function scrape() {
 
   let videosDurationParamsObj = {
     key: Secrets.apiKey,
-    part: 'contentDetails',
-    fields: 'items/contentDetails/duration'
+    part: 'contentDetails, statistics',
+    fields: 'items/contentDetails/duration, items/statistics'
   }
 
   let nextPageToken = null
@@ -93,10 +104,15 @@ function scrape() {
                 res.on('data', chunk => rawData += chunk);
                 res.on('end', () => resolve(rawData))
               })
-            }).then(durationData => {
-              durationData = JSON.parse(durationData)
-              totalDuration += sumVideoDurations(durationData)
-              videoCount += durationData.items.length
+            }).then(videoData => {
+              videoData = JSON.parse(videoData)
+              totalDuration += sumVideoDurations(videoData)
+
+              if (videoCount == 0) {
+                gatherLatestData(videoData)
+              }
+
+              videoCount += videoData.items.length
               resolve(sumVideoInfo(videoCount))
             })
           })
@@ -108,16 +124,17 @@ function scrape() {
   }
 
   sumVideoInfo().then(videoCount => {
-    data.average = Math.ceil(totalDuration / videoCount)
+    data.averageDuration = Math.ceil(totalDuration / videoCount)
 
     const saveData = {
       key: averageKey,
-      data: {
-        val: data.average
-      }
+      data: {}
     }
 
+    Object.assign(saveData.data, data)
+
     datastore.save(saveData)
+    console.log('finished!')
   })
 }
 
