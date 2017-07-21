@@ -31,7 +31,6 @@ function extractVideoIds(data) {
 
 function gatherLatestData(videoData) {
   data.latestDuration = parseDuration(videoData.items[0].contentDetails.duration)
-  data.latestHate = videoData.items[0].statistics.dislikeCount
   data.latestDislikes = []
   data.latestLikes = []
 

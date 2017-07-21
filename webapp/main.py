@@ -3,6 +3,10 @@ from flask import Flask, render_template, request
 from google.appengine.ext import ndb
 import httplib
 import logging
+import math
+# import pdb
+# pdb.set_trace()
+
 
 app = Flask(__name__)
 
@@ -14,7 +18,6 @@ def enable_local_error_handling():
 class AggregateData(ndb.Model):
     averageDuration = ndb.IntegerProperty()
     latestDuration = ndb.IntegerProperty()
-    latestHate = ndb.IntegerProperty()
     latestLikes = ndb.JsonProperty()
     latestDislikes = ndb.JsonProperty()
 
@@ -26,8 +29,6 @@ def getData():
     if (res != None):
         data['latestLikes'] = res.latestLikes
         data['latestDislikes'] = res.latestDislikes
-        latestHate = res.latestDislikes[0]
-        data['latestHate'] = latestHate
 
         avgMin, avgSec = res.averageDuration/60, res.averageDuration%60
         data['averageDurationMin'] = avgMin
@@ -49,22 +50,28 @@ def getData():
         elif latestPirulaDuration <= 0.3:
             data['latestDurationSubjective'] = u'Ai que Burro. Dá zero pra ele'
 
-        if latestHate >= 25000:
-            data['latestHateSubjective'] = u'Tá bom! Sou evangélico agora.'
-        elif latestHate >= 15000:
-            data['latestHateSubjective'] = u'OK OK! A terra é plana. Satifeitos?'
-        elif latestHate >= 7000:
-            data['latestHateSubjective'] = u'Se segura que lá vem chumbo!'
-        elif latestHate >= 5000:
-            data['latestHateSubjective'] = u'Ai meu Senhor Jesus...'
-        elif latestHate >= 3500:
-            data['latestHateSubjective'] = u'O canal é meu, viu!!?'
-        elif latestHate >= 1000:
-            data['latestHateSubjective'] = u'Haters gonna hate...'
-        elif latestHate > 500:
-            data['latestHateSubjective'] = u'Acho que ouvi algum zunido...'
-        elif latestHate <= 500:
-            data['latestHateSubjective'] = u'Nem faz cócegas...'
+        latestHate = res.latestDislikes[0]
+        if math.isnan(latestHate):
+            data['latestHate'] = u'???'
+            data['latestHateSubjective'] = u'IIIhh Deu pra tráz...'
+        else:
+            data['latestHate'] = latestHate
+            if latestHate >= 25000:
+                data['latestHateSubjective'] = u'Tá bom! Sou evangélico agora.'
+            elif latestHate >= 15000:
+                data['latestHateSubjective'] = u'OK OK! A terra é plana. Satifeitos?'
+            elif latestHate >= 7000:
+                data['latestHateSubjective'] = u'Se segura que lá vem chumbo!'
+            elif latestHate >= 5000:
+                data['latestHateSubjective'] = u'Ai meu Senhor Jesus...'
+            elif latestHate >= 3500:
+                data['latestHateSubjective'] = u'O canal é meu, viu!!?'
+            elif latestHate >= 1000:
+                data['latestHateSubjective'] = u'Haters gonna hate...'
+            elif latestHate > 500:
+                data['latestHateSubjective'] = u'Acho que ouvi algum zunido...'
+            elif latestHate <= 500:
+                data['latestHateSubjective'] = u'Nem faz cócegas...'
 
         latestSixQuality = []
         for i in range(0, 5):
