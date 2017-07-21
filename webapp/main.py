@@ -7,7 +7,6 @@ import math
 # import pdb
 # pdb.set_trace()
 
-
 app = Flask(__name__)
 
 @app.before_request
@@ -74,9 +73,11 @@ def getData():
                 data['latestHateSubjective'] = u'Nem faz cócegas...'
 
         latestSixQuality = []
-        for i in range(0, 5):
-            quality = res.latestLikes > res.latestDislikes
+        for i in range(0, 6):
+            quality = res.latestLikes[i] > res.latestDislikes[i]
             latestSixQuality.append(quality)
+
+        data['latestSixQuality'] = latestSixQuality
 
         return data
     else:
@@ -84,6 +85,9 @@ def getData():
 
 @app.route('/')
 def root():
+    # nan = float('nan')
+    # AggregateData(id='lonelyone',averageDuration = 1500, latestDuration = 1500, latestLikes = [nan, 211,211,251,121,4221], latestDislikes =[22,2031,210,2311,nan,215] ).put()
+
     data = getData()
 
     if (data != None):

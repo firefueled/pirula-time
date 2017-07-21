@@ -66,8 +66,14 @@
       <div class="row">
         <div class="two-thirds column">
           <h4>Como estão seus 6 videos mais recentes?</h4>
-          {% block latestSix scoped %}
-          {% endblock %}
+          <div class="row">
+            {% for item in latestSixQuality %}
+              <div class="two columns">
+                  {% if item %} <img src="../assets/images/pirula-yes.png"> {% endif %}
+                  {% if not item %} <img src="../assets/images/pirula-no.png"> {% endif %}
+              </div>
+            {% endfor %}
+          </div>
         </div>
         <div class="one-third column">
           <img src="../assets/images/pirula-meero.png">
