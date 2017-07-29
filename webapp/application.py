@@ -3,36 +3,40 @@ from flask import Flask, render_template, request
 import httplib
 import logging
 import math
+import boto3
 # import pdb
 # pdb.set_trace()
 
 application = Flask(__name__)
+dyndb = boto3.resource('dynamodb')
+dataTb = dyndb.Table('Data')
+dataKey = boto3.dynamodb.conditions.Key('id').eq(0)
 
-# @application.before_request
-# def enable_local_error_handling():
-#     application.logger.addHandler(logging.StreamHandler())
-#     application.logger.setLevel(logging.INFO)
+def retrieveLatest():
+    data = {'latestDislikes': [], 'latestLikes': []}
+    res = dataTb.query(Limit=1,ScanIndexForward=False,KeyConditionExpression=dataKey)
+    if len(res['Items']) == 0:
+        return None
 
-# class AggregateData(ndb.Model):
-#     averageDuration = ndb.IntegerProperty()
-#     latestDuration = ndb.IntegerProperty()
-#     latestLikes = ndb.JsonProperty()
-#     latestDislikes = ndb.JsonProperty()
+    res = res['Items'][0]
+    for item in res['latestDislikes']['NS']:
+        data['latestDislikes'].append(int(item))
+    for item in res['latestLikes']['NS']:
+        data['latestLikes'].append(int(item))
+    data['averageDuration'] = int(res['averageDuration']['N'])
+    data['latestDuration'] = int(res['latestDuration']['N'])
+    return data
+
 
 def getData():
-    data = {}
+    data = retrieveLatest()
 
-    res = ndb.Key(AggregateData, 'lonelyone').get()
-
-    if (res != None):
-        data['latestLikes'] = res.latestLikes
-        data['latestDislikes'] = res.latestDislikes
-
-        avgMin, avgSec = res.averageDuration/60, res.averageDuration%60
+    if (data != None):
+        avgMin, avgSec = data['averageDuration']/60, data['averageDuration']%60
         data['averageDurationMin'] = avgMin
         data['averageDurationSec'] = avgSec
 
-        latestPirulaDuration = float(res.latestDuration)/res.averageDuration
+        latestPirulaDuration = float(data['latestDuration'])/data['averageDuration']
         data['latestPirulaDuration'] = '{:.2}'.format(latestPirulaDuration)
 
         if latestPirulaDuration >= 1.5:
@@ -48,7 +52,7 @@ def getData():
         elif latestPirulaDuration <= 0.3:
             data['latestDurationSubjective'] = u'Ai que Burro. Dá zero pra ele'
 
-        latestHate = res.latestDislikes[0]
+        latestHate = data['latestDislikes'][0]
         if math.isnan(latestHate):
             data['latestHate'] = u'???'
             data['latestHateSubjective'] = u'IIIhh Deu pra tráz...'
@@ -73,7 +77,7 @@ def getData():
 
         latestSixQuality = []
         for i in range(0, 6):
-            quality = res.latestLikes[i] > res.latestDislikes[i]
+            quality = data['latestLikes'][i] >= data['latestDislikes'][i]*3
             latestSixQuality.append(quality)
 
         data['latestSixQuality'] = latestSixQuality
@@ -84,23 +88,21 @@ def getData():
 
 @application.route('/')
 def root():
-    # data = getData()
+    data = getData()
 
-    # if (data != None):
-    return render_template('index.html')
-    # else:
-    # return u'Oopps. Algum terraplanista tá me sabotando...'
+    if (data != None):
+        return render_template('index.html', **data)
+    else:
+        return u'Oopps. Algum terraplanista tá me sabotando...'
 
-# @application.route('/runScrape')
-# def runScrape():
-#     conn = httplib.HTTPSConnection('us-central1-pirula-time.cloudfunctions.net')
-#     conn.request('GET', '/doIt')
-#     resp = conn.getresponse()
-#     return resp.read()
+@application.route('/runScrape')
+def runScrape():
+    conn = httplib.HTTPSConnection('us-central1-pirula-time.cloudfunctions.net')
+    conn.request('GET', '/doIt')
+    resp = conn.getresponse()
+    return resp.read()
 
 # run the application.
 if __name__ == "__main__":
-    # Setting debug to True enables debug output. This line should be
-    # removed before deploying a production application.
-    application.debug = True
+    # application.debug = True
     application.run()
