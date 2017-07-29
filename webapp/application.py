@@ -1,24 +1,23 @@
 # coding= utf-8
 from flask import Flask, render_template, request
-from google.appengine.ext import ndb
 import httplib
 import logging
 import math
 # import pdb
 # pdb.set_trace()
 
-app = Flask(__name__)
+application = Flask(__name__)
 
-@app.before_request
-def enable_local_error_handling():
-    app.logger.addHandler(logging.StreamHandler())
-    app.logger.setLevel(logging.INFO)
+# @application.before_request
+# def enable_local_error_handling():
+#     application.logger.addHandler(logging.StreamHandler())
+#     application.logger.setLevel(logging.INFO)
 
-class AggregateData(ndb.Model):
-    averageDuration = ndb.IntegerProperty()
-    latestDuration = ndb.IntegerProperty()
-    latestLikes = ndb.JsonProperty()
-    latestDislikes = ndb.JsonProperty()
+# class AggregateData(ndb.Model):
+#     averageDuration = ndb.IntegerProperty()
+#     latestDuration = ndb.IntegerProperty()
+#     latestLikes = ndb.JsonProperty()
+#     latestDislikes = ndb.JsonProperty()
 
 def getData():
     data = {}
@@ -83,21 +82,25 @@ def getData():
     else:
         return None
 
-@app.route('/')
+@application.route('/')
 def root():
-    # nan = float('nan')
-    # AggregateData(id='lonelyone',averageDuration = 1500, latestDuration = 1500, latestLikes = [nan, 211,211,251,121,4221], latestDislikes =[22,2031,210,2311,nan,215] ).put()
+    # data = getData()
 
-    data = getData()
+    # if (data != None):
+    return render_template('index.html')
+    # else:
+    # return u'Oopps. Algum terraplanista tá me sabotando...'
 
-    if (data != None):
-        return render_template('index.html', **data)
-    else:
-        return u'Oopps. Algum terraplanista tá me sabotando...'
+# @application.route('/runScrape')
+# def runScrape():
+#     conn = httplib.HTTPSConnection('us-central1-pirula-time.cloudfunctions.net')
+#     conn.request('GET', '/doIt')
+#     resp = conn.getresponse()
+#     return resp.read()
 
-@app.route('/runScrape')
-def runScrape():
-    conn = httplib.HTTPSConnection('us-central1-pirula-time.cloudfunctions.net')
-    conn.request('GET', '/doIt')
-    resp = conn.getresponse()
-    return resp.read()
+# run the application.
+if __name__ == "__main__":
+    # Setting debug to True enables debug output. This line should be
+    # removed before deploying a production application.
+    application.debug = True
+    application.run()
