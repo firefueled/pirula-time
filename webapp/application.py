@@ -8,7 +8,7 @@ import boto3
 # pdb.set_trace()
 
 application = Flask(__name__)
-dyndb = boto3.resource('dynamodb')
+dyndb = boto3.resource('dynamodb', 'sa-east-1')
 dataTb = dyndb.Table('Data')
 dataKey = boto3.dynamodb.conditions.Key('id').eq(0)
 
@@ -19,12 +19,18 @@ def retrieveLatest():
         return None
 
     res = res['Items'][0]
-    for item in res['latestDislikes']['NS']:
-        data['latestDislikes'].append(int(item))
-    for item in res['latestLikes']['NS']:
-        data['latestLikes'].append(int(item))
-    data['averageDuration'] = int(res['averageDuration']['N'])
-    data['latestDuration'] = int(res['latestDuration']['N'])
+    for item in res['latestDislikes'].split(';'):
+        if math.isnan(float(item)):
+            data['latestDislikes'].append(-1)
+        else:
+            data['latestDislikes'].append(int(item))
+    for item in res['latestLikes'].split(';'):
+        if math.isnan(float(item)):
+            data['latestLikes'].append(-1)
+        else:
+            data['latestLikes'].append(int(item))
+    data['averageDuration'] = int(res['averageDuration'])
+    data['latestDuration'] = int(res['latestDuration'])
     return data
 
 
@@ -53,9 +59,9 @@ def getData():
             data['latestDurationSubjective'] = u'Ai que Burro. Dá zero pra ele'
 
         latestHate = data['latestDislikes'][0]
-        if math.isnan(latestHate):
+        if latestHate == -1:
             data['latestHate'] = u'???'
-            data['latestHateSubjective'] = u'IIIhh Deu pra tráz...'
+            data['latestHateSubjective'] = u'IIIhh Deu pra trás...'
         else:
             data['latestHate'] = latestHate
             if latestHate >= 25000:
@@ -64,9 +70,9 @@ def getData():
                 data['latestHateSubjective'] = u'OK OK! A terra é plana. Satifeitos?'
             elif latestHate >= 7000:
                 data['latestHateSubjective'] = u'Se segura que lá vem chumbo!'
-            elif latestHate >= 5000:
+            elif latestHate >= 4500:
                 data['latestHateSubjective'] = u'Ai meu Senhor Jesus...'
-            elif latestHate >= 3500:
+            elif latestHate >= 3000:
                 data['latestHateSubjective'] = u'O canal é meu, viu!!?'
             elif latestHate >= 1000:
                 data['latestHateSubjective'] = u'Haters gonna hate...'
@@ -94,13 +100,6 @@ def root():
         return render_template('index.html', **data)
     else:
         return u'Oopps. Algum terraplanista tá me sabotando...'
-
-@application.route('/runScrape')
-def runScrape():
-    conn = httplib.HTTPSConnection('us-central1-pirula-time.cloudfunctions.net')
-    conn.request('GET', '/doIt')
-    resp = conn.getresponse()
-    return resp.read()
 
 # run the application.
 if __name__ == "__main__":
