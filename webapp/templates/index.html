@@ -9,11 +9,13 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <link rel="stylesheet" href="../static/css/normalize.css">
-  <link rel="stylesheet" href="../static/css/skeleton.css">
-  <link rel="stylesheet" href="../static/css/custom.css">
+  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
 
-  <link rel="icon" type="image/png" href="../static/images/favicon.png">
+  <link rel="stylesheet" href="/static/css/normalize.css">
+  <link rel="stylesheet" href="/static/css/skeleton.css">
+  <link rel="stylesheet" href="/static/css/custom.css">
+
+  <link rel="icon" type="image/png" href="/static/images/favicon.png">
 
 </head>
 <body>
@@ -27,7 +29,7 @@
           <h4>Um Pirula equivale {{ averageDurationMin }} minutos e {{ averageDurationSec }} segundos.</h4>
         </div>
         <div class="one-third column">
-          <img src="../static/images/pirula.jpg">
+          <img src="/static/images/pirula.jpg">
         </div>
       </div>
     </div>
@@ -41,7 +43,7 @@
           <h5>{{ latestDurationSubjective }}</h5>
         </div>
         <div class="one-third column">
-          <img src="../static/images/pirula-magic.png">
+          <img src="/static/images/pirula-magic.png">
         </div>
       </div>
     </div>
@@ -55,7 +57,7 @@
           <h5>{{ latestHateSubjective }}</p>
         </div>
         <div class="one-third column">
-          <img src="../static/images/pirula-bad.png">
+          <img src="/static/images/pirula-bad.png">
         </div>
       </div>
     </div>
@@ -69,14 +71,14 @@
           <div class="row">
             {% for item in latestSixQuality %}
               <div class="two columns">
-                  {% if item %} <img src="../static/images/pirula-yes.png"> {% endif %}
-                  {% if not item %} <img src="../static/images/pirula-no.png"> {% endif %}
+                  {% if item %} <img src="/static/images/pirula-yes.png"> {% endif %}
+                  {% if not item %} <img src="/static/images/pirula-no.png"> {% endif %}
               </div>
             {% endfor %}
           </div>
         </div>
         <div class="one-third column">
-          <img src="../static/images/pirula-meero.png">
+          <img src="/static/images/pirula-meero.png">
         </div>
       </div>
     </div>

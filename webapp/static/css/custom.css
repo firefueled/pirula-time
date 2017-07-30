@@ -1,5 +1,5 @@
 body {
-  font-family: sans-serif;
+  font-family: "Raleway", Verdana, "DejaVu Sans Light", sans-serif;
 }
 
 .section {
@@ -7,21 +7,3 @@ body {
   text-align: center;
   height: 400px;
 }
-
-/*
-.time {
-  background-image: url('../images/time-bg.jpg');
-}
-
-.question {
-  background-image: url('../images/question-bg.jpg');
-}
-
-.hate {
-  background-image: url('../images/hate-bg.jpg');
-}
-
-.hero {
-  background-image: url('../images/youtube-bg.jpg');
-}
-*/
