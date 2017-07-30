@@ -1,1 +1,2 @@
-gcloud beta functions deploy doIt --trigger-http --stage-bucket pirula-time-cloud-function
+zip function.zip index.js secrets.js
+aws lambda update-function-code --function-name pirula-time-scraper --zip-file fileb://function.zip --publish

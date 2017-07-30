@@ -1,16 +1,15 @@
-const Https = require('https');
-const Datastore = require('@google-cloud/datastore')
-const QueryString = require('querystring');
+const Https = require('https')
+const QueryString = require('querystring')
 const Secrets = require('./secrets.js')
+const Aws = require('aws-sdk')
 
 const playlistItemsUrl = 'https://www.googleapis.com/youtube/v3/playlistItems?'
 const videosUrl = 'https://www.googleapis.com/youtube/v3/videos?'
 const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
-const projectId = 'pirula-time'
 
-const datastore = Datastore({ projectId: projectId })
-const averageKey = datastore.key(['AggregateData', 'lonelyone'])
-let data = {}
+Aws.config.update({region: 'sa-east-1'})
+const dynamodb = new Aws.DynamoDB()
+const data = {}
 
 const durationRe = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/
 function parseDuration(str) {
@@ -30,7 +29,7 @@ function extractVideoIds(data) {
 }
 
 function gatherLatestData(videoData) {
-  data.latestDuration = parseDuration(videoData.items[0].contentDetails.duration)
+  data.latestDuration = parseDuration(videoData.items[0].contentDetails.duration).toString()
   data.latestDislikes = []
   data.latestLikes = []
 
@@ -38,6 +37,9 @@ function gatherLatestData(videoData) {
     data.latestLikes.push(Number(item.statistics.likeCount))
     data.latestDislikes.push(Number(item.statistics.dislikeCount))
   })
+
+  data.latestDislikes = data.latestDislikes.join(';')
+  data.latestLikes = data.latestLikes.join(';')
 }
 
 function sumVideoDurations(data) {
@@ -123,36 +125,43 @@ function scrape() {
   }
 
   sumVideoInfo().then(videoCount => {
-    data.averageDuration = Math.ceil(totalDuration / videoCount)
+    data.averageDuration = Math.ceil(totalDuration / videoCount).toString()
 
     const saveData = {
-      key: averageKey,
-      data: {}
+      Item: {
+        id: { N: '0' }, timestamp: { N: new Date().getTime().toString() },
+        latestDislikes: { S: data.latestDislikes },
+        latestLikes: { S: data.latestLikes },
+        averageDuration: { N: data.averageDuration },
+        latestDuration: { N: data.latestDuration },
+      },
+      TableName: 'Data',
     }
 
-    Object.assign(saveData.data, data)
-
-    datastore.save(saveData)
-    console.log('finished!')
+    dynamodb.putItem(saveData, function(err, data) {
+      if (err) console.log(err, err.stack) // an error occurred
+      else     console.log('finished!')           // successful response
+    })
   })
 }
 
-exports.doIt = function doIt(req, res) {
+// exports.doIt = function doIt(req, res) {
+exports.doIt = function doIt(event, context, callback) {
   scrape()
-  res.end('scraping')
+  callback(null, 'scraping')
 }
 
-const http = require('http');
-const server = http.createServer((req, res) => {
-  if (req.url == '/scrape') {
-    this.doIt(req, res)
-  } else {
-    res.end()
-  }
-});
+// const http = require('http');
+// const server = http.createServer((req, res) => {
+//   if (req.url == '/scrape') {
+//     this.doIt(req, res)
+//   } else {
+//     res.end()
+//   }
+// });
 
-const hostname = '127.0.0.1';
-const port = 3000;
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
-});
+// const hostname = '127.0.0.1';
+// const port = 3000;
+// server.listen(port, hostname, () => {
+//   console.log(`Server running at http://${hostname}:${port}/`);
+// });

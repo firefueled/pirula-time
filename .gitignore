@@ -1,2 +1,4 @@
 node_modules/
 scraper/secrets.js
+*.zip
+env/
