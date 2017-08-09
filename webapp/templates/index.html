@@ -80,10 +80,11 @@
         <div class="two-thirds column">
           <h4>Como estão seus 6 videos mais recentes?</h4>
           <div class="row">
-            {% for item in latestSixQuality %}
+            {% for item in latestVideos %}
               <div class="two columns">
-                  {% if item %} <img src="/static/images/pirula-yes.png"> {% endif %}
-                  {% if not item %} <img src="/static/images/pirula-no.png"> {% endif %}
+                <a href="{{ item.link }}">
+                  <img title="{{ item.title }}" src="{{ item.imageSrc }}" />
+                </a>
               </div>
             {% endfor %}
           </div>
