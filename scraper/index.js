@@ -141,7 +141,7 @@ function scrape() {
         averageDuration: { N: data.averageDuration },
         latestDuration: { N: data.latestDuration },
       },
-      TableName: 'Data',
+      TableName: 'Data-v2',
     }
 
     dynamodb.putItem(saveData, function(err, data) {

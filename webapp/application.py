@@ -9,7 +9,7 @@ import boto3
 
 application = Flask(__name__)
 dyndb = boto3.resource('dynamodb', 'sa-east-1')
-dataTb = dyndb.Table('Data')
+dataTb = dyndb.Table('Data-v2')
 dataKey = boto3.dynamodb.conditions.Key('id').eq(0)
 
 def retrieveLatest():
