@@ -30,16 +30,21 @@ function extractVideoIds(data) {
 
 function gatherLatestData(videoData) {
   data.latestDuration = parseDuration(videoData.items[0].contentDetails.duration).toString()
-  data.latestDislikes = []
-  data.latestLikes = []
+  data.latestHate = videoData.items[0].statistics.dislikeCount
+  data.latestVideos = []
 
-  videoData.items.slice(0, 6).forEach(item => {
-    data.latestLikes.push(Number(item.statistics.likeCount))
-    data.latestDislikes.push(Number(item.statistics.dislikeCount))
+  videoData.items.slice(0, 6).forEach((item, i) => {
+    obj = { M: {
+      id: { N: String(i) },
+      title: { S: item.snippet.title },
+      url: { S: 'https://www.youtube.com/watch?v='+item.id }
+    }}
+    dislikeCount = Number(item.statistics.dislikeCount) || 0
+    likeCount = Number(item.statistics.likeCount) || 0
+    obj.M.quality = { BOOL: likeCount > dislikeCount*3 }
+
+    data.latestVideos.push(obj)
   })
-
-  data.latestDislikes = data.latestDislikes.join(';')
-  data.latestLikes = data.latestLikes.join(';')
 }
 
 function sumVideoDurations(data) {
@@ -62,8 +67,8 @@ function scrape() {
 
   let videosDurationParamsObj = {
     key: Secrets.apiKey,
-    part: 'contentDetails, statistics',
-    fields: 'items/contentDetails/duration, items/statistics'
+    part: 'contentDetails, statistics, snippet',
+    fields: 'items(contentDetails/duration, id, snippet/title, statistics(dislikeCount, likeCount))'
   }
 
   let nextPageToken = null
@@ -109,6 +114,7 @@ function scrape() {
               videoData = JSON.parse(videoData)
               totalDuration += sumVideoDurations(videoData)
 
+              // latest data is available on the first page
               if (videoCount == 0) {
                 gatherLatestData(videoData)
               }
@@ -129,9 +135,9 @@ function scrape() {
 
     const saveData = {
       Item: {
-        id: { N: '0' }, timestamp: { N: new Date().getTime().toString() },
-        latestDislikes: { S: data.latestDislikes },
-        latestLikes: { S: data.latestLikes },
+        id: { N: '0' }, timestamp: { N: Math.round(new Date().getTime()/1000).toString() },
+        latestVideos: { L: data.latestVideos },
+        latestHate: { N: data.latestHate },
         averageDuration: { N: data.averageDuration },
         latestDuration: { N: data.latestDuration },
       },
@@ -149,6 +155,7 @@ function scrape() {
 exports.doIt = function doIt(event, context, callback) {
   scrape()
   callback(null, 'scraping')
+  // res.end('scraping')
 }
 
 // const http = require('http');
