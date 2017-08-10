@@ -132,14 +132,17 @@ function scrape() {
 
   sumVideoInfo().then(videoCount => {
     data.averageDuration = Math.ceil(totalDuration / videoCount).toString()
+    now = Math.round(new Date().getTime()/1000)
+    ttl = now + 604800 // 7 days
 
     const saveData = {
       Item: {
-        id: { N: '0' }, timestamp: { N: Math.round(new Date().getTime()/1000).toString() },
+        id: { N: '0' }, timestamp: { N: now.toString() },
         latestVideos: { L: data.latestVideos },
         latestHate: { N: data.latestHate },
         averageDuration: { N: data.averageDuration },
         latestDuration: { N: data.latestDuration },
+        ttl: { N: ttl.toString() },
       },
       TableName: 'Data-v2',
     }
