@@ -8,7 +8,7 @@ const videosUrl = 'https://www.googleapis.com/youtube/v3/videos?'
 const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
 
 Aws.config.update({region: 'sa-east-1'})
-const dynamodb = new Aws.DynamoDB()
+const dynamodb = new Aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 const data = {}
 
 const durationRe = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/
@@ -34,14 +34,14 @@ function gatherLatestData(videoData) {
   data.latestVideos = []
 
   videoData.items.slice(0, 6).forEach((item, i) => {
-    obj = { M: {
-      id: { N: String(i) },
-      title: { S: item.snippet.title },
-      url: { S: 'https://www.youtube.com/watch?v='+item.id }
-    }}
+    obj = {
+      'id': i,
+      'title': item.snippet.title,
+      'url': `https://www.youtube.com/watch?v=${item.id}`
+    }
     dislikeCount = Number(item.statistics.dislikeCount) || 0
     likeCount = Number(item.statistics.likeCount) || 0
-    obj.M.quality = { BOOL: likeCount > dislikeCount*3 }
+    obj['quality'] = likeCount > dislikeCount*3
 
     data.latestVideos.push(obj)
   })
@@ -58,7 +58,7 @@ function sumVideoDurations(data) {
 function scrape() {
 
   let playlistItemsParamsObj = {
-    key: Secrets.apiKey,
+    key: Secrets.googleApiKey,
     playlistId: channelId,
     maxResults: 50,
     part: 'contentDetails',
@@ -66,7 +66,7 @@ function scrape() {
   }
 
   let videosDurationParamsObj = {
-    key: Secrets.apiKey,
+    key: Secrets.googleApiKey,
     part: 'contentDetails, statistics, snippet',
     fields: 'items(contentDetails/duration, id, snippet/title, statistics(dislikeCount, likeCount))'
   }
@@ -136,42 +136,42 @@ function scrape() {
     ttl = now + 604800 // 7 days
 
     const saveData = {
-      Item: {
-        id: { N: '0' }, timestamp: { N: now.toString() },
-        latestVideos: { L: data.latestVideos },
-        latestHate: { N: data.latestHate },
-        averageDuration: { N: data.averageDuration },
-        latestDuration: { N: data.latestDuration },
-        ttl: { N: ttl.toString() },
-      },
       TableName: 'Data-v2',
+      Item: {
+        'id': 0, 'timestamp': now,
+        'latestVideos': data.latestVideos,
+        'latestHate': data.latestHate,
+        'averageDuration': data.averageDuration,
+        'latestDuration': data.latestDuration,
+        'ttl': ttl,
+      },
     }
 
-    dynamodb.putItem(saveData, function(err, data) {
+    dynamodb.put(saveData, function(err, data) {
       if (err) console.log(err, err.stack) // an error occurred
       else     console.log('finished!')           // successful response
     })
   })
 }
 
-// exports.doIt = function doIt(req, res) {
-exports.doIt = function doIt(event, context, callback) {
+exports.doIt = function doIt(req, res) {
+// exports.doIt = function doIt(event, context, callback) {
   scrape()
-  callback(null, 'scraping')
-  // res.end('scraping')
+  // callback(null, 'scraping')
+  res.end('scraping')
 }
 
-// const http = require('http');
-// const server = http.createServer((req, res) => {
-//   if (req.url == '/scrape') {
-//     this.doIt(req, res)
-//   } else {
-//     res.end()
-//   }
-// });
+const http = require('http');
+const server = http.createServer((req, res) => {
+  if (req.url == '/scrape') {
+    this.doIt(req, res)
+  } else {
+    res.end()
+  }
+});
 
-// const hostname = '127.0.0.1';
-// const port = 3000;
-// server.listen(port, hostname, () => {
-//   console.log(`Server running at http://${hostname}:${port}/`);
-// });
+const hostname = '127.0.0.1';
+const port = 3000;
+server.listen(port, hostname, () => {
+  console.log(`Server running at http://${hostname}:${port}/`);
+});
