@@ -96,6 +96,10 @@ def root():
     else:
         return u'Oopps. Algum terraplanista tá me sabotando...'
 
+@application.route('/health')
+def health():
+    return u"cOF COF... I'm OK doc Cof..."
+
 # run the application.
 if __name__ == "__main__":
     application.debug = True
