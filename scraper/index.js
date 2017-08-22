@@ -9,6 +9,7 @@ const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
 
 Aws.config.update({region: 'sa-east-1'})
 const dynamodb = new Aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
+const dbPut = Util.promisify(dynamodb.put)
 const data = {}
 
 const durationRe = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/
@@ -130,27 +131,63 @@ function scrape() {
     }
   }
 
-  sumVideoInfo().then(videoCount => {
-    data.averageDuration = Math.ceil(totalDuration / videoCount).toString()
-    now = Math.round(new Date().getTime()/1000)
-    ttl = now + 604800 // 7 days
+  sumVideoInfo().then(videoCount => handleData(videoCount))
+}
 
-    const saveData = {
-      TableName: 'Data-v2',
-      Item: {
-        'id': 0, 'timestamp': now,
-        'latestVideos': data.latestVideos,
-        'latestHate': data.latestHate,
-        'averageDuration': data.averageDuration,
-        'latestDuration': data.latestDuration,
-        'ttl': ttl,
-      },
+function handleData(videoCount) {
+  data.averageDuration = Math.ceil(totalDuration / videoCount).toString()
+  const now = Math.round(new Date().getTime()/1000)
+  const ttl = now + 604800 // 7 days
+
+  const averageData = {
+    TableName: 'Data-dev',
+    Item: {
+      'id': 0, 'timestamp': now,
+      'latestVideos': data.latestVideos,
+      'latestHate': data.latestHate,
+      'averageDuration': data.averageDuration,
+      'latestDuration': data.latestDuration,
+      'ttl': ttl,
+    },
+  }
+
+  // save the average data
+  dynamodb.put(averageData, function(err, data) {
+    if (err) console.log(err);
+    else console.log(data);
+  });
+
+  // query the saved durations
+  new Promise((resolve, reject) => {
+    const params = {
+      TableName: 'Duration',
+      Limit: 30,
+      ScanIndexForward: false,
+      KeyConditionExpression: 'id = :id',
+      ExpressionAttributeValues: { ':id': 0 }
     }
+    dynamodb.query(params, function(err, data) {
+      if (err) reject(err)
+      else resolve(data.Items)
+  }).then(durationData => {
 
-    dynamodb.put(saveData, function(err, data) {
-      if (err) console.log(err, err.stack) // an error occurred
-      else     console.log('finished!')           // successful response
-    })
+    // update graph if there's a new video
+    // TODO detect a new video by using it's id instead of duration
+    if (latestDuration != durationData[0].duration) {
+      const graphUrl = createNewGraph(durationData)
+      const data = {
+        TableName: 'Duration',
+        Item: {
+          'id': 0,
+          'duration': latestDuration,
+          'graphUrl': graphUrl,
+        }
+      }
+      dynamodb.put(data, function(err, data) {
+        if (err) console.log(err)
+        else console.log(data)
+      })
+    }
   })
 }
 
