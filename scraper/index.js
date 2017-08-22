@@ -83,7 +83,7 @@ function scrape() {
 
       return new Promise((resolve, reject) => {
         if (videoCount == 0 || nextPageToken) {
-          playlistItemsParamsObj.nextPageToken = nextPageToken
+          playlistItemsParamsObj.pageToken = nextPageToken
           const playlistItemsParams = QueryString.stringify(playlistItemsParamsObj)
           const videoIdsUrl = `${playlistItemsUrl}${playlistItemsParams}`
 
