@@ -2,6 +2,7 @@ const Https = require('https')
 const QueryString = require('querystring')
 const Secrets = require('./secrets.js')
 const Aws = require('aws-sdk')
+const Plotly = require('plotly')('firefueled', Secrets.plotlyApiKey);
 
 const playlistItemsUrl = 'https://www.googleapis.com/youtube/v3/playlistItems?'
 const videosUrl = 'https://www.googleapis.com/youtube/v3/videos?'
@@ -9,7 +10,6 @@ const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
 
 Aws.config.update({region: 'sa-east-1'})
 const dynamodb = new Aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
-const dbPut = Util.promisify(dynamodb.put)
 const data = {}
 
 const durationRe = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/
@@ -31,6 +31,8 @@ function extractVideoIds(data) {
 
 function gatherLatestData(videoData) {
   data.latestDuration = parseDuration(videoData.items[0].contentDetails.duration).toString()
+  data.latestVideoId = videoData.items[0].id
+  data.latestPublishAt = videoData.items[0].snippet.publishedAt
   data.latestHate = videoData.items[0].statistics.dislikeCount
   data.latestVideos = []
 
@@ -63,13 +65,13 @@ function scrape() {
     playlistId: channelId,
     maxResults: 50,
     part: 'contentDetails',
-    fields: 'items/contentDetails/videoId,nextPageToken,pageInfo'
+    fields: 'items/contentDetails/videoId, nextPageToken, pageInfo'
   }
 
   let videosDurationParamsObj = {
     key: Secrets.googleApiKey,
     part: 'contentDetails, statistics, snippet',
-    fields: 'items(contentDetails/duration, id, snippet/title, statistics(dislikeCount, likeCount))'
+    fields: 'items(contentDetails/duration, id, snippet(title, publishedAt), statistics(dislikeCount, likeCount))'
   }
 
   let nextPageToken = null
@@ -84,7 +86,7 @@ function scrape() {
 
       return new Promise((resolve, reject) => {
         if (videoCount == 0 || nextPageToken) {
-          playlistItemsParamsObj.nextPageToken = nextPageToken
+          playlistItemsParamsObj.pageToken = nextPageToken
           const playlistItemsParams = QueryString.stringify(playlistItemsParamsObj)
           const videoIdsUrl = `${playlistItemsUrl}${playlistItemsParams}`
 
@@ -131,63 +133,101 @@ function scrape() {
     }
   }
 
-  sumVideoInfo().then(videoCount => handleData(videoCount))
+  sumVideoInfo().then(videoCount => handleData(Math.ceil(totalDuration / videoCount).toString()))
 }
 
-function handleData(videoCount) {
-  data.averageDuration = Math.ceil(totalDuration / videoCount).toString()
+function handleData(averageDuration) {
+  data.averageDuration = averageDuration
   const now = Math.round(new Date().getTime()/1000)
   const ttl = now + 604800 // 7 days
 
   const averageData = {
     TableName: 'Data-dev',
     Item: {
-      'id': 0, 'timestamp': now,
-      'latestVideos': data.latestVideos,
-      'latestHate': data.latestHate,
-      'averageDuration': data.averageDuration,
-      'latestDuration': data.latestDuration,
-      'ttl': ttl,
+      id: 0, timestamp: now,
+      latestVideos: data.latestVideos,
+      latestHate: data.latestHate,
+      averageDuration: data.averageDuration,
+      latestDuration: data.latestDuration,
+      ttl: ttl,
     },
   }
 
   // save the average data
-  dynamodb.put(averageData, function(err, data) {
-    if (err) console.log(err);
-    else console.log(data);
-  });
+  dynamodb.put(averageData, function(err, res) {});
 
   // query the saved durations
   new Promise((resolve, reject) => {
     const params = {
-      TableName: 'Duration',
-      Limit: 30,
+      TableName: 'Duration-dev',
+      Limit: 15,
       ScanIndexForward: false,
-      KeyConditionExpression: 'id = :id',
-      ExpressionAttributeValues: { ':id': 0 }
     }
-    dynamodb.query(params, function(err, data) {
+    dynamodb.scan(params, (err, res) => {
       if (err) reject(err)
-      else resolve(data.Items)
+      else resolve(res.Items)
+    })
   }).then(durationData => {
 
     // update graph if there's a new video
-    // TODO detect a new video by using it's id instead of duration
-    if (latestDuration != durationData[0].duration) {
-      const graphUrl = createNewGraph(durationData)
-      const data = {
-        TableName: 'Duration',
-        Item: {
-          'id': 0,
-          'duration': latestDuration,
-          'graphUrl': graphUrl,
+    if (durationData.length == 0 || data.latestVideoId != durationData[0].id) {
+      createNewGraph(durationData)
+      .then(url => {
+        const publishTimestamp = Math.round(new Date(data.latestPublishAt).getTime()/1000)
+        const newDuration = {
+          TableName: 'Duration-dev',
+          Item: {
+            id: data.latestVideoId,
+            duration: data.latestDuration,
+            timestamp: publishTimestamp,
+            graphUrl: url,
+          }
         }
-      }
-      dynamodb.put(data, function(err, data) {
-        if (err) console.log(err)
-        else console.log(data)
+        dynamodb.put(newDuration, (err, res) => {})
       })
     }
+  })
+}
+
+function createNewGraph(data) {
+  yData = data.map(item => { return item.duration })
+  yData.push(data.latestDuration)
+
+  const trace1 = {
+    y: yData,
+    line: {
+      color: 'rgb(68, 68, 68)',
+      shape: 'spline'
+    },
+    mode: 'lines',
+    type: 'scatter',
+  }
+  layout = {
+    autosize: false,
+    width: 500,
+    height: 50,
+    margin: { l: 0, r: 0, b: 0, t: 0, pad: 0 },
+    xaxis: {
+      showgrid: false,
+      zeroline: false,
+      showline: false,
+      showticklabels: false
+    },
+    yaxis: {
+      autorange: false,
+      showgrid: false,
+      zeroline: false,
+      showline: false,
+      showticklabels: false,
+      range: [Math.min(...yData) - 50, Math.max(...yData) + 50],
+    },
+  }
+  var graphOptions = { layout: layout, filename: "duration-per-video", fileopt: "overwrite" }
+  return new Promise((resolve, reject) => {
+    Plotly.plot([trace1], graphOptions, (err, msg) => {
+      if (err) reject(err)
+      else resolve(msg.url + '.png')
+    })
   })
 }
 
