@@ -142,7 +142,7 @@ function handleData(averageDuration) {
   const ttl = now + 604800 // 7 days
 
   const averageData = {
-    TableName: 'Data-dev',
+    TableName: 'Data',
     Item: {
       id: 0, timestamp: now,
       latestVideos: data.latestVideos,
@@ -159,28 +159,32 @@ function handleData(averageDuration) {
   // query the saved durations
   new Promise((resolve, reject) => {
     const params = {
-      TableName: 'Duration-dev',
+      TableName: 'Duration',
       Limit: 15,
       ScanIndexForward: false,
+      KeyConditionExpression: 'id = :zero',
+      ExpressionAttributeValues: { ':zero': 0, },
     }
-    dynamodb.scan(params, (err, res) => {
+    dynamodb.query(params, (err, res) => {
       if (err) reject(err)
       else resolve(res.Items)
     })
   }).then(durationData => {
 
     // update graph if there's a new video
-    if (durationData.length == 0 || data.latestVideoId != durationData[0].id) {
+    if (durationData.length == 0 || data.latestVideoId != durationData[0].videoId) {
       createNewGraph(durationData)
       .then(url => {
         const publishTimestamp = Math.round(new Date(data.latestPublishAt).getTime()/1000)
+        const twoMonthsAhead = now + 5184000
         const newDuration = {
-          TableName: 'Duration-dev',
+          TableName: 'Duration',
           Item: {
-            id: data.latestVideoId,
+            id: 0,
+            videoId: data.latestVideoId,
             duration: data.latestDuration,
             timestamp: publishTimestamp,
-            graphUrl: url,
+            graphUrl: url, ttl: twoMonthsAhead,
           }
         }
         dynamodb.put(newDuration, (err, res) => {})
@@ -189,9 +193,12 @@ function handleData(averageDuration) {
   })
 }
 
-function createNewGraph(data) {
-  yData = data.map(item => { return item.duration })
-  yData.push(data.latestDuration)
+function createNewGraph(graphData) {
+  yData = graphData.map(item => { return item.duration })
+  yData.reverse()
+  yData.push(Number(data.latestDuration))
+  max = Number(data.averageDuration) * 3
+  min = Number(data.averageDuration) / 3
 
   const trace1 = {
     y: yData,
@@ -219,36 +226,36 @@ function createNewGraph(data) {
       zeroline: false,
       showline: false,
       showticklabels: false,
-      range: [Math.min(...yData) - 50, Math.max(...yData) + 50],
+      range: [min, max],
     },
   }
-  var graphOptions = { layout: layout, filename: "duration-per-video", fileopt: "overwrite" }
+  var graphOptions = { layout: layout, fileopt: "overwrite" }
   return new Promise((resolve, reject) => {
     Plotly.plot([trace1], graphOptions, (err, msg) => {
       if (err) reject(err)
-      else resolve(msg.url + '.png')
+      else resolve(msg.url + '.jpeg')
     })
   })
 }
 
-exports.doIt = function doIt(req, res) {
-// exports.doIt = function doIt(event, context, callback) {
+// exports.doIt = function doIt(req, res) {
+exports.doIt = function doIt(event, context, callback) {
   scrape()
-  // callback(null, 'scraping')
-  res.end('scraping')
+  callback(null, 'scraping')
+  // res.end('scraping')
 }
 
-const http = require('http');
-const server = http.createServer((req, res) => {
-  if (req.url == '/scrape') {
-    this.doIt(req, res)
-  } else {
-    res.end()
-  }
-});
+// const http = require('http');
+// const server = http.createServer((req, res) => {
+//   if (req.url == '/scrape') {
+//     this.doIt(req, res)
+//   } else {
+//     res.end()
+//   }
+// });
 
-const hostname = '127.0.0.1';
-const port = 3000;
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
-});
+// const hostname = '127.0.0.1';
+// const port = 3000;
+// server.listen(port, hostname, () => {
+//   console.log(`Server running at http://${hostname}:${port}/`);
+// });
