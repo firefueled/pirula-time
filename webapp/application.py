@@ -109,6 +109,10 @@ def root():
     resp.headers['Cache-Control'] = 'max-age=1800'
     return resp
 
+@application.route('/health')
+def health():
+    return u"cOF COF... I'm OK doc Cof..."
+
 # run the application.
 if __name__ == "__main__":
     application.debug = True
