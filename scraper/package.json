@@ -3,6 +3,6 @@
   "license": "MIT",
   "version": "0.0.1",
   "dependencies": {
-    "@google-cloud/datastore": "1.0.1"
+    "plotly": "^1.0.6"
   }
 }
