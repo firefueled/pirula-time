@@ -1,5 +1,5 @@
 # coding= utf-8
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, make_response
 import httplib
 import logging
 import math
@@ -10,11 +10,14 @@ import boto3
 application = Flask(__name__)
 dyndb = boto3.resource('dynamodb', 'sa-east-1')
 dataTb = dyndb.Table('Data-v2')
-dataKey = boto3.dynamodb.conditions.Key('id').eq(0)
+durationTb = dyndb.Table('Duration-dev')
+zeroIdKey = boto3.dynamodb.conditions.Key('id').eq(0)
 
 def retrieveLatest():
     data = { 'latestVideos': [] }
-    res = dataTb.query(Limit=1,ScanIndexForward=False,KeyConditionExpression=dataKey)
+
+    # average data
+    res = dataTb.query(Limit=1,ScanIndexForward=False,KeyConditionExpression=zeroIdKey)
     if len(res['Items']) == 0:
         return None
 
@@ -32,6 +35,12 @@ def retrieveLatest():
     data['averageDuration'] = int(res['averageDuration'])
     data['latestDuration'] = int(res['latestDuration'])
     data['latestHate'] = int(res['latestHate'])
+
+    # duration data
+    res = durationTb.query(Limit=1,ScanIndexForward=False,KeyConditionExpression=zeroIdKey)
+    if len(res['Items']) != 0:
+        data['durationGraphUrl'] = res['Items'][0]['graphUrl']
+
     return data
 
 def processData(data):
@@ -90,11 +99,15 @@ def getData():
 @application.route('/')
 def root():
     data = getData()
+    resp = None
 
     if (data != None):
-        return render_template('index.html', **data)
+        resp = make_response(render_template('index.html', **data), 200)
     else:
-        return u'Oopps. Algum terraplanista tá me sabotando...'
+        resp = make_response(u'Oopps. Algum terraplanista tá me sabotando...', 200)
+
+    resp.headers['Cache-Control'] = 'max-age=1800'
+    return resp
 
 # run the application.
 if __name__ == "__main__":
