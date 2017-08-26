@@ -10,6 +10,7 @@ const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
 
 Aws.config.update({region: 'sa-east-1'})
 const dynamodb = new Aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
+const s3 = new Aws.S3()
 const data = {}
 
 const durationRe = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/
@@ -133,10 +134,17 @@ function scrape() {
     }
   }
 
-  sumVideoInfo().then(videoCount => handleData(Math.ceil(totalDuration / videoCount).toString()))
+  sumVideoInfo()
+  .then(videoCount => {
+    const averageDuration = Math.ceil(totalDuration / videoCount).toString()
+    saveData(averageDuration)
+    .then(msg => {
+      console.info(msg)
+    })
+  })
 }
 
-function handleData(averageDuration) {
+function saveData(averageDuration) {
   data.averageDuration = averageDuration
   const now = Math.round(new Date().getTime()/1000)
   const ttl = now + 604800 // 7 days
@@ -157,7 +165,7 @@ function handleData(averageDuration) {
   dynamodb.put(averageData, function(err, res) {});
 
   // query the saved durations
-  new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const params = {
       TableName: 'Duration',
       Limit: 15,
@@ -165,42 +173,44 @@ function handleData(averageDuration) {
       KeyConditionExpression: 'id = :zero',
       ExpressionAttributeValues: { ':zero': 0, },
     }
-    dynamodb.query(params, (err, res) => {
-      if (err) reject(err)
-      else resolve(res.Items)
-    })
-  }).then(durationData => {
+    dynamodb.query(params, (err, durationData) => {
+      if (err) resolve("done. couldn't query Duration")
+      else {
+        // update graph if this is a new video
+        new Promise(resolve => {
+          if (durationData.Items.length != 0 && data.latestVideoId != durationData.Items[0].videoId) {
 
-    // update graph if there's a new video
-    if (durationData.length == 0 || data.latestVideoId != durationData[0].videoId) {
-      createNewGraph(durationData)
-      .then(url => {
-        const publishTimestamp = Math.round(new Date(data.latestPublishAt).getTime()/1000)
-        const twoMonthsAhead = now + 5184000
-        const newDuration = {
-          TableName: 'Duration',
-          Item: {
-            id: 0,
-            videoId: data.latestVideoId,
-            duration: data.latestDuration,
-            timestamp: publishTimestamp,
-            graphUrl: url, ttl: twoMonthsAhead,
-          }
-        }
-        dynamodb.put(newDuration, (err, res) => {})
-      })
-    }
+            createNewGraph(durationData.Items).then(s3Key => {
+              const publishTimestamp = Math.round(new Date(data.latestPublishAt).getTime()/1000)
+              const twoMonthsAhead = now + 5184000
+              const newDuration = {
+                TableName: 'Duration',
+                Item: {
+                  id: 0,
+                  ttl: twoMonthsAhead,
+                  videoId: data.latestVideoId,
+                  duration: data.latestDuration,
+                  timestamp: publishTimestamp,
+                  graphUrl: `https://d39f8y0nq8jhd8.cloudfront.net/${s3Key}`,
+                }
+              }
+              dynamodb.put(newDuration, (err, res) => resolve('done. saved new graph'))
+            })
+          } else { resolve('done. no new graph') }
+        }).then(msg => resolve(msg))
+      }
+    })
   })
 }
 
 function createNewGraph(graphData) {
-  yData = graphData.map(item => { return item.duration })
+  let yData = graphData.map(x => { return x.duration })
   yData.reverse()
   yData.push(Number(data.latestDuration))
-  max = Number(data.averageDuration) * 3
-  min = Number(data.averageDuration) / 3
+  const max = Number(data.averageDuration) * 3
+  const min = Number(data.averageDuration) / 3
 
-  const trace1 = {
+  const trace = {
     y: yData,
     line: {
       color: 'rgb(68, 68, 68)',
@@ -209,10 +219,9 @@ function createNewGraph(graphData) {
     mode: 'lines',
     type: 'scatter',
   }
-  layout = {
+
+  const layout = {
     autosize: false,
-    width: 500,
-    height: 50,
     margin: { l: 0, r: 0, b: 0, t: 0, pad: 0 },
     xaxis: {
       showgrid: false,
@@ -229,11 +238,30 @@ function createNewGraph(graphData) {
       range: [min, max],
     },
   }
-  var graphOptions = { layout: layout, fileopt: "overwrite" }
-  return new Promise((resolve, reject) => {
-    Plotly.plot([trace1], graphOptions, (err, msg) => {
-      if (err) reject(err)
-      else resolve(msg.url + '.jpeg')
+
+  const figure = { data: [trace], layout: layout }
+
+  const imgOpts = {
+    format: 'jpeg',
+    width: 500,
+    height: 50
+  }
+
+  return new Promise(resolve => {
+    Plotly.getImage(figure, imgOpts, (error, imageStream) => {
+      if (error) return console.log (error)
+
+      const key = `generated/durationGraph-${data.latestVideoId}.jpeg`
+
+      const params = {
+        Body: imageStream,
+        Bucket: 'pirula-time',
+        Key: key,
+        CacheControl: '1800',
+        ContentType: 'jpeg',
+      }
+
+      s3.upload(params, (err, data) => resolve(key))
     })
   })
 }
