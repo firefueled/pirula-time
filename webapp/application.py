@@ -38,7 +38,7 @@ def retrieveLatest():
 
     # duration data
     res = durationTb.query(Limit=1,ScanIndexForward=False,KeyConditionExpression=zeroIdKey)
-    if len(res['Items']) != 0:
+    if len(res['Items']) != 0 and 'graphUrl' in res['Items'][0]:
         data['durationGraphUrl'] = res['Items'][0]['graphUrl']
 
     return data
@@ -115,5 +115,5 @@ def health():
 
 # run the application.
 if __name__ == "__main__":
-    application.debug = True
+    application.debug = False
     application.run()

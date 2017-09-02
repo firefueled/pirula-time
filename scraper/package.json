@@ -4,5 +4,8 @@
   "version": "0.0.1",
   "dependencies": {
     "plotly": "^1.0.6"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.104.0"
   }
 }

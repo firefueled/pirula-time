@@ -150,7 +150,7 @@ function saveData(averageDuration) {
   const ttl = now + 604800 // 7 days
 
   const averageData = {
-    TableName: 'Data',
+    TableName: 'Data-v2',
     Item: {
       id: 0, timestamp: now,
       latestVideos: data.latestVideos,
@@ -220,9 +220,21 @@ function createNewGraph(graphData) {
     type: 'scatter',
   }
 
+  const avgTrace = {
+    y: yData.map(x => Number(data.averageDuration)),
+    line: {
+      color: 'rgb(44, 160, 44, 0.7)',
+      shape: 'spline',
+      width: 1,
+    },
+    mode: 'lines',
+    type: 'scatter',
+  }
+
   const layout = {
     autosize: false,
     margin: { l: 0, r: 0, b: 0, t: 0, pad: 0 },
+    showlegend: false,
     xaxis: {
       showgrid: false,
       zeroline: false,
@@ -239,7 +251,7 @@ function createNewGraph(graphData) {
     },
   }
 
-  const figure = { data: [trace], layout: layout }
+  const figure = { data: [avgTrace, trace], layout: layout }
 
   const imgOpts = {
     format: 'jpeg',
