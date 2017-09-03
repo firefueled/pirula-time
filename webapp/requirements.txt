@@ -7,6 +7,7 @@ Jinja2==2.9.6
 jmespath==0.9.3
 MarkupSafe==1.0
 python-dateutil==2.6.1
+PyYAML==3.12
 s3transfer==0.1.11
 six==1.10.0
 Werkzeug==0.12.2

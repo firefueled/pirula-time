@@ -6,7 +6,7 @@ const Plotly = require('plotly')('firefueled', Secrets.plotlyApiKey);
 
 const playlistItemsUrl = 'https://www.googleapis.com/youtube/v3/playlistItems?'
 const videosUrl = 'https://www.googleapis.com/youtube/v3/videos?'
-const channelId = 'UUdGpd0gNn38UKwoncZd9rmA'
+const playlistId = 'UUdGpd0gNn38UKwoncZd9rmA'
 
 Aws.config.update({region: 'sa-east-1'})
 const dynamodb = new Aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
@@ -38,13 +38,13 @@ function gatherLatestData(videoData) {
   data.latestVideos = []
 
   videoData.items.slice(0, 6).forEach((item, i) => {
-    obj = {
+    const obj = {
       'id': i,
       'title': item.snippet.title,
       'url': `https://www.youtube.com/watch?v=${item.id}`
     }
-    dislikeCount = Number(item.statistics.dislikeCount) || 0
-    likeCount = Number(item.statistics.likeCount) || 0
+    const dislikeCount = Number(item.statistics.dislikeCount) || 0
+    const likeCount = Number(item.statistics.likeCount) || 0
     obj['quality'] = likeCount > dislikeCount*3
 
     data.latestVideos.push(obj)
@@ -61,15 +61,15 @@ function sumVideoDurations(data) {
 
 function scrape() {
 
-  let playlistItemsParamsObj = {
+  const playlistItemsParamsObj = {
     key: Secrets.googleApiKey,
-    playlistId: channelId,
+    playlistId: playlistId,
     maxResults: 50,
     part: 'contentDetails',
     fields: 'items/contentDetails/videoId, nextPageToken, pageInfo'
   }
 
-  let videosDurationParamsObj = {
+  const videosDurationParamsObj = {
     key: Secrets.googleApiKey,
     part: 'contentDetails, statistics, snippet',
     fields: 'items(contentDetails/duration, id, snippet(title, publishedAt), statistics(dislikeCount, likeCount))'
@@ -80,7 +80,7 @@ function scrape() {
 
   // parse only the first 200 videos
   // 50 per page
-  let maxVideos = 200
+  const maxVideos = 200
 
   const sumVideoInfo = (videoCount = 0) => {
     if (videoCount < maxVideos) {
@@ -204,7 +204,7 @@ function saveData(averageDuration) {
 }
 
 function createNewGraph(graphData) {
-  let yData = graphData.map(x => { return x.duration })
+  const yData = graphData.map(x => { return x.duration })
   yData.reverse()
   yData.push(Number(data.latestDuration))
   const max = Number(data.averageDuration) * 3

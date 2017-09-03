@@ -1,0 +1,32 @@
+# Duração (em Pirulas) do último video
+- min: 0
+  max: 0.2
+  text: Que vergonha, Ricardo!...
+
+- min: 0.2
+  max: 0.4
+  text: Ai que Burro. Dá zero pra ele
+
+- min: 0.4
+  max: 0.5
+  text: Precisa comer mais comer salgadinho, né?
+
+- min: 0.5
+  max: 0.7
+  text: Tá testando o novo chroma key
+
+- min: 0.7
+  max: 1
+  text: Meero...
+
+- min: 1
+  max: 1.2
+  text: Merece até um joinha :)
+
+- min: 1.2
+  max: 1.5
+  text: Bacana!
+
+- min: 1.5
+  max: 99
+  text: Hmmm... Delícia

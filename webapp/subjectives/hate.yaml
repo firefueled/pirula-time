@@ -1,0 +1,36 @@
+# Total de dislikes do último video
+- min: 0
+  max: 500
+  text: Nem faz cócegas...
+
+- min: 500
+  max: 1000
+  text: Acho que ouvi algum zunido...
+
+- min: 1000
+  max: 3000
+  text: Haters gonna hate...
+
+- min: 3000
+  max: 4500
+  text: Se segura que lá vem chumbo!
+
+- min: 4500
+  max: 6500
+  text: Já sabia que ia levar porrada
+
+- min: 6500
+  max: 7500
+  text: Ai meu Senhor Darwin
+
+- min: 7500
+  max: 10000
+  text: O canal é meu, viu!!?
+
+- min: 10000
+  max: 25000
+  text: OK OK! A terra é plana. Satifeitos?
+
+- min: 25000
+  max: 99999
+  text: Tá bom! Sou evangélico agora.

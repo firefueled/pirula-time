@@ -1,8 +1,10 @@
 # coding= utf-8
 from flask import Flask, render_template, request, make_response
+import os
 import logging
 import math
 import boto3
+from subjectives import *
 # import pdb
 # pdb.set_trace()
 
@@ -25,9 +27,9 @@ def retrieveLatest():
     for item in res['latestVideos']:
         item['id'] = int(item['id'])
         if item['quality']:
-            item['imageSrc'] = '/static/images/pirula-yes.png'
+            item['imageSrc'] = 'https://d39f8y0nq8jhd8.cloudfront.net/images/pirula-yes.png'
         else:
-            item['imageSrc'] = '/static/images/pirula-no.png'
+            item['imageSrc'] = 'https://d39f8y0nq8jhd8.cloudfront.net//images/pirula-no.png'
         data['latestVideos'].append(item)
 
 
@@ -44,46 +46,17 @@ def retrieveLatest():
 
 def processData(data):
     avgMin, avgSec = divmod(data['averageDuration'], 60)
-    data['averageDurationMin'] = avgMin
-    data['averageDurationSec'] = avgSec
+    data['averageDurationMin'], data['averageDurationSec'] = avgMin, avgSec
 
     latestPirulaDuration = float(data['latestDuration'])/data['averageDuration']
-    data['latestPirulaDuration'] = '{:.2}'.format(latestPirulaDuration)
-
-    if latestPirulaDuration >= 1.5:
-        data['latestDurationSubjective'] = 'Hmmm... Delícia!'
-    elif latestPirulaDuration >= 1:
-        data['latestDurationSubjective'] = 'Bacana!'
-    elif latestPirulaDuration >= 0.5:
-        data['latestDurationSubjective'] = 'Meero...'
-    elif latestPirulaDuration < 0.5:
-        if latestPirulaDuration >= 0.4:
-            data['latestDurationSubjective'] = 'Vamo comer salgadinho?'
-        data['latestDurationSubjective'] = 'O que é isso, Ricardo!?...'
-    elif latestPirulaDuration <= 0.3:
-        data['latestDurationSubjective'] = 'Ai que Burro. Dá zero pra ele'
-
     latestHate = data['latestHate']
+
     if latestHate == -1:
         data['latestHate'] = '???'
-        data['latestHateSubjective'] = 'IIIhh Deu pra trás...'
-    else:
-        if latestHate >= 25000:
-            data['latestHateSubjective'] = 'Tá bom! Sou evangélico agora.'
-        elif latestHate >= 15000:
-            data['latestHateSubjective'] = 'OK OK! A terra é plana. Satifeitos?'
-        elif latestHate >= 7000:
-            data['latestHateSubjective'] = 'Se segura que lá vem chumbo!'
-        elif latestHate >= 4500:
-            data['latestHateSubjective'] = 'Ai meu Senhor Jesus...'
-        elif latestHate >= 3000:
-            data['latestHateSubjective'] = 'O canal é meu, viu!!?'
-        elif latestHate >= 1000:
-            data['latestHateSubjective'] = 'Haters gonna hate...'
-        elif latestHate > 500:
-            data['latestHateSubjective'] = 'Acho que ouvi algum zunido...'
-        elif latestHate <= 500:
-            data['latestHateSubjective'] = 'Nem faz cócegas...'
+
+    data['latestPirulaDuration'] = '{:.2}'.format(latestPirulaDuration)
+    data['latestDurationSubjective'] = getDurationSubjective(latestPirulaDuration)
+    data['latestHateSubjective'] = getHateSubjective(latestHate)
 
     return data
 
@@ -103,7 +76,7 @@ def root():
     if (data != None):
         resp = make_response(render_template('index.html', **data), 200)
     else:
-        resp = make_response('Oopps. Algum terraplanista tá me sabotando...', 200)
+        resp = make_response('Opa! Algum terraplanista tá me sabotando...', 200)
 
     resp.headers['Cache-Control'] = 'max-age=1800'
     return resp
@@ -114,5 +87,5 @@ def health():
 
 # run the application.
 if __name__ == "__main__":
-    application.debug = False
+    application.debug = os.getenv('ENV') != 'PROD'
     application.run()
