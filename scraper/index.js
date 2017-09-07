@@ -8,7 +8,7 @@ const playlistItemsUrl = 'https://www.googleapis.com/youtube/v3/playlistItems?'
 const videosUrl = 'https://www.googleapis.com/youtube/v3/videos?'
 const playlistId = 'UUdGpd0gNn38UKwoncZd9rmA'
 
-Aws.config.update({region: 'sa-east-1'})
+Aws.config.update({region: 'us-east-1'})
 const dynamodb = new Aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 const s3 = new Aws.S3()
 const data = {}

@@ -6,7 +6,7 @@ The scraper is a Node.js 6.10 Lambda serverless function
 The webapp is an Flask 0.10.1 Python 3.4 Elastic Beanstalk app
 
 The scraper is called hourly, gathers youtube data from the Google APIs, and stores it on DynamoDB; which is then read by the webapp  
-The subjective assessment of each relevant value is determined by the `yaml` files in the subjectives dir
+The subjective assessment of each relevant value is determined by the `yaml` files in the `webapp/subjectives` dir
 
 ## Contributions/Contribuições
 You're welcome to edit the `yaml` files if you have any funny jokes  

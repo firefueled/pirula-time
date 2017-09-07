@@ -9,7 +9,7 @@ from subjectives import *
 # pdb.set_trace()
 
 application = Flask(__name__)
-dyndb = boto3.resource('dynamodb', 'sa-east-1')
+dyndb = boto3.resource('dynamodb', 'us-east-1')
 dataTb = dyndb.Table('Data-v2')
 durationTb = dyndb.Table('Duration')
 zeroIdKey = boto3.dynamodb.conditions.Key('id').eq(0)
