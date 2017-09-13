@@ -162,7 +162,10 @@ function saveData(averageDuration) {
   }
 
   // save the average data
-  dynamodb.put(averageData, function(err, res) {});
+  dynamodb.put(averageData, function(err, res) {
+    if (err) console.log(err)
+    else console.log(res)
+  });
 
   // query the saved durations
   return new Promise(resolve => {

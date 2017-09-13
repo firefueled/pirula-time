@@ -29,7 +29,7 @@ def retrieveLatest():
         if item['quality']:
             item['imageSrc'] = 'https://d39f8y0nq8jhd8.cloudfront.net/images/pirula-yes.png'
         else:
-            item['imageSrc'] = 'https://d39f8y0nq8jhd8.cloudfront.net//images/pirula-no.png'
+            item['imageSrc'] = 'https://d39f8y0nq8jhd8.cloudfront.net/images/pirula-no.png'
         data['latestVideos'].append(item)
 
 
