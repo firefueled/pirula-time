@@ -141,7 +141,7 @@ function saveData() {
   const ttl = now + 604800 // 7 days
 
   const averageData = {
-    TableName: 'Data',
+    TableName: 'Data-v2',
     Item: {
       id: 0, timestamp: now,
       latestVideos: finalData.latestVideos,
@@ -153,7 +153,7 @@ function saveData() {
   }
 
   // save the average data
-  dynamodb.put(averageData)
+  dynamodb.put(averageData, (err, res) => {})
 
   // query the saved durations
   return new Promise(resolve => {
@@ -169,8 +169,7 @@ function saveData() {
       else {
         // update graph if this is a new video
         new Promise(resolve => {
-          // if (durationData.Items.length != 0 && finalData.latestVideoId != durationData.Items[0].videoId) {
-          if (true) {
+          if (durationData.Items.length != 0 && finalData.latestVideoId != durationData.Items[0].videoId) {
 
             createNewGraph(durationData.Items).then(s3Key => {
               const publishTimestamp = Math.round(new Date(finalData.latestPublishAt).getTime()/1000)
