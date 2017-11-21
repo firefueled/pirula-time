@@ -14,6 +14,11 @@ dataTb = dyndb.Table('Data-v2')
 durationTb = dyndb.Table('Duration')
 zeroIdKey = boto3.dynamodb.conditions.Key('id').eq(0)
 
+# Atronomical Unit in m
+AU = 149597870700
+# light speed in m/s
+C = 299792458
+
 def retrieveLatest():
     data = { 'latestVideos': [] }
 
@@ -39,24 +44,36 @@ def retrieveLatest():
 
     # duration data
     res = durationTb.query(Limit=1,ScanIndexForward=False,KeyConditionExpression=zeroIdKey)
-    if len(res['Items']) != 0 and 'graphUrl' in res['Items'][0]:
-        data['durationGraphUrl'] = res['Items'][0]['graphUrl']
+    if len(res['Items']) == 0:
+        return None
+
+    res = res['Items'][0]
+
+    data['durationGraphUrl'] = res['graphUrl']
 
     return data
 
 def processData(data):
-    avgMin, avgSec = divmod(data['averageDuration'], 60)
+    pirulaUnit = data['averageDuration']
+    avgMin, avgSec = divmod(pirulaUnit, 60)
     data['averageDurationMin'], data['averageDurationSec'] = avgMin, avgSec
 
-    latestPirulaDuration = float(data['latestDuration'])/data['averageDuration']
+    latestPirulaDuration = float(data['latestDuration'])/pirulaUnit
     latestHate = data['latestHate']
 
     if latestHate == -1:
         data['latestHate'] = '???'
 
-    data['latestPirulaDuration'] = '{:.2}'.format(latestPirulaDuration)
+    data['latestPirulaDuration'] = '{:.2}'.format(latestPirulaDuration).replace(',','.')
     data['latestDurationSubjective'] = getDurationSubjective(latestPirulaDuration)
     data['latestHateSubjective'] = getHateSubjective(latestHate)
+
+    # Fatos Desconhecidos
+    lightPirula = int(pirulaUnit * C / 1000  ** 2)
+    pirulaSun2Earth = AU / C / pirulaUnit
+
+    data['lightPirula'] = '{:,}'.format(lightPirula).replace(',','.')
+    data['pirulaSunToEarth'] = '{:.2}'.format(pirulaSun2Earth).replace(',','.')
 
     return data
 
