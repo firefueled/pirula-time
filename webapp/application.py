@@ -72,8 +72,9 @@ def processData(data):
     lightPirula = int(pirulaUnit * C / 1000  ** 2)
     pirulaSun2Earth = AU / C / pirulaUnit
 
-    data['lightPirula'] = '{:,}'.format(lightPirula).replace(',','.')
-    data['pirulaSunToEarth'] = '{:.2}'.format(pirulaSun2Earth).replace(',','.')
+    data['unknownFacts'] = {}
+    data['unknownFacts']['lightPirula'] = '{:,}'.format(lightPirula).replace(',','.')
+    data['unknownFacts']['pirulaSunToEarth'] = '{:.2}'.format(pirulaSun2Earth).replace(',','.')
 
     return data
 

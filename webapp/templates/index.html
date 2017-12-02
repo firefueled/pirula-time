@@ -14,32 +14,30 @@
   <!-- Custom CSS -->
   <style type="text/css">
     body { font-family: "Raleway", Verdana, "DejaVu Sans Light", sans-serif; }
-
     .section {
       padding: 8rem 0 0;
       text-align: center;
       height: 400px;
     }
-
-    .more-facts .facts-anchor {
+    .more-facts {
       cursor: grabbing;
+    }
+    .more-facts li {
+      line-height: 0.9em;
+    }
+    .more-facts .facts-anchor {
       opacity: 0.2;
       font-size: 110%;
     }
-    .more-facts {
-      text-align: left;
-    }
     .more-facts .facts-tab {
       display: none;
+      cursor: cell;
     }
     .more-facts:hover .facts-tab {
       display: block;
     }
     .more-facts:hover .facts-anchor {
       opacity: 1;
-    }
-    .more-facts li {
-      line-height: 0.9em;
     }
   </style>
 
@@ -64,29 +62,23 @@
           <img class="u-max-full-width" src="{{ durationGraphUrl }}" alt="Gráfico de duração com o tempo" />
           {% endif %}
 
+          {% if unknownFacts %}
+            <div class="more-facts">
+              <h6 class="facts-anchor"><span class="unknown">Fatos Desconhecidos</span> sobre um Pirula</h6>
+              <div class="facts-tab">
+                <ul>
+                  <li>1 Pirula-luz = {{ unknownFacts['lightPirula'] }} milhões de quilômetros</li>
+                  <li>Leva {{ unknownFacts['pirulaSunToEarth'] }} Pirulas para a luz do Sol chegar à Terra</li>
+                </ul>
+              </div>
+            </div>
+          {% endif %}
+
         </div>
         <div class="one-third column">
           <img alt="Pirula" src="https://d39f8y0nq8jhd8.cloudfront.net/images/pirula.jpg">
         </div>
       </div>
-
-      {% if lightPirula %}
-      <div class="row">
-        <div class="three columns">&nbsp;</div>
-
-        <div class="six columns more-facts">
-          <h6 class="facts-anchor"><span class="unknown">Fatos Desconhecidos</span> sobre um Pirula</h6>
-          <div class="facts-tab">
-            <ul>
-              <li>1 Pirula-luz = {{ lightPirula }} milhões de quilômetros</li>
-              <li>Leva {{ pirulaSunToEarth }} Pirulas para a luz do Sol chegar à Terra</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="three columns">&nbsp;</div>
-      </div>
-      {% endif %}
     </div>
   </div>
 
