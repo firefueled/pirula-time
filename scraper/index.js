@@ -260,7 +260,7 @@ function createNewGraph(graphData) {
         Body: imageStream,
         Bucket: 'pirula-time',
         Key: key,
-        CacheControl: '1800',
+        CacheControl: 'max-age=31536000',
         ContentType: 'jpeg',
       }
 
