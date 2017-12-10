@@ -19,17 +19,29 @@ AU = 149597870700
 # light speed in m/s
 C = 299792458
 
-def retrieveLatest():
-    data = { 'latestVideos': [] }
+def retrieveData():
+    data = {}
 
     # average data
     res = dataTb.query(Limit=1,ScanIndexForward=False,KeyConditionExpression=zeroIdKey)
     if len(res['Items']) == 0:
         return None
 
-    res = res['Items'][0]
+    data['AverageData'] = res['Items'][0]
 
-    for item in res['latestVideos']:
+    # duration data
+    res = durationTb.query(Limit=1,ScanIndexForward=False,KeyConditionExpression=zeroIdKey)
+    if len(res['Items']) == 0:
+        return None
+
+    data['DurationData'] = res['Items'][0]
+
+    return data
+
+def processData(dbData):
+    data = { 'latestVideos': [], 'unknownFacts': {} }
+
+    for item in dbData['AverageData']['latestVideos']:
         item['id'] = int(item['id'])
         if item['quality']:
             item['imageSrc'] = 'https://d39f8y0nq8jhd8.cloudfront.net/images/pirula-yes.png'
@@ -37,26 +49,14 @@ def retrieveLatest():
             item['imageSrc'] = 'https://d39f8y0nq8jhd8.cloudfront.net/images/pirula-no.png'
         data['latestVideos'].append(item)
 
+    data['averageDuration'] = int(dbData['AverageData']['averageDuration'])
+    data['latestDuration'] = int(dbData['AverageData']['latestDuration'])
+    data['latestHate'] = int(dbData['AverageData']['latestHate'])
 
-    data['averageDuration'] = int(res['averageDuration'])
-    data['latestDuration'] = int(res['latestDuration'])
-    data['latestHate'] = int(res['latestHate'])
-
-    # duration data
-    res = durationTb.query(Limit=1,ScanIndexForward=False,KeyConditionExpression=zeroIdKey)
-    if len(res['Items']) == 0:
-        return None
-
-    res = res['Items'][0]
-
-    data['durationGraphUrl'] = res['graphUrl']
-
-    return data
-
-def processData(data):
     pirulaUnit = data['averageDuration']
     avgMin, avgSec = divmod(pirulaUnit, 60)
     data['averageDurationMin'], data['averageDurationSec'] = avgMin, avgSec
+
 
     latestPirulaDuration = float(data['latestDuration'])/pirulaUnit
     latestHate = data['latestHate']
@@ -68,23 +68,21 @@ def processData(data):
     data['latestDurationSubjective'] = getDurationSubjective(latestPirulaDuration)
     data['latestHateSubjective'] = getHateSubjective(latestHate)
 
+    data['durationGraphUrl'] = dbData['DurationData']['graphUrl']
+
     # Fatos Desconhecidos
     lightPirula = int(pirulaUnit * C / 1000  ** 2)
     pirulaSun2Earth = AU / C / pirulaUnit
 
-    data['unknownFacts'] = {}
     data['unknownFacts']['lightPirula'] = '{:,}'.format(lightPirula).replace(',','.')
     data['unknownFacts']['pirulaSunToEarth'] = '{:.2}'.format(pirulaSun2Earth).replace(',','.')
 
     return data
 
 def getData():
-    data = retrieveLatest()
-
-    if (data != None):
-        return processData(data)
-    else:
-        return None
+    data = retrieveData()
+    processedData = processData(data)
+    return processedData
 
 @application.route('/')
 def root():
