@@ -21,8 +21,8 @@ const videosDataParamsObj = {
   fields: 'items(contentDetails/duration, id, snippet(title, publishedAt), statistics(dislikeCount, likeCount))'
 }
 
-Aws.config.update({region: 'us-east-1'})
-const dynamodb = new Aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
+Aws.config.update({ region: 'us-east-1' })
+const dynamodb = new Aws.DynamoDB.DocumentClient({ apiVersion: '2012-08-10' });
 const s3 = new Aws.S3()
 
 function getFromAPI(paramsObj, url) {
@@ -46,7 +46,7 @@ function parseDuration(str) {
   const minutes = Number.parseInt(res.pop()) || 0
   const hours = Number.parseInt(res.pop()) || 0
 
-  return hours*60*60 + minutes*60 + seconds
+  return hours * 60 * 60 + minutes * 60 + seconds
 }
 
 function extractVideoIds(data) {
@@ -72,7 +72,7 @@ function gatherLatestData() {
     }
     const dislikeCount = Number(item.statistics.dislikeCount) || 0
     const likeCount = Number(item.statistics.likeCount) || 0
-    obj.quality = likeCount > dislikeCount * 3
+    obj.quality = likeCount > dislikeCount * 10
 
     finalData.latestVideos.push(obj)
   })
@@ -107,37 +107,37 @@ function scrape() {
 
           // get video ids from the uploaded playlist
           getFromAPI(playlistItemsParamsObj, playlistItemsUrl)
-          .then(videoIdsData => {
-            videoIdsData = JSON.parse(videoIdsData)
-            nextPageToken = videoIdsData.nextPageToken
-            const videoIds = extractVideoIds(videoIdsData)
-            videosDataParamsObj.id = videoIds
+            .then(videoIdsData => {
+              videoIdsData = JSON.parse(videoIdsData)
+              nextPageToken = videoIdsData.nextPageToken
+              const videoIds = extractVideoIds(videoIdsData)
+              videosDataParamsObj.id = videoIds
 
-            // get data from the video ids
-            getFromAPI(videosDataParamsObj, videosDataUrl)
-            .then(videoData => {
-              videoData = JSON.parse(videoData)
-              videosData.push(...videoData.items)
-              videoCount += videoData.items.length
-              resolve(getVideoInfo())
+              // get data from the video ids
+              getFromAPI(videosDataParamsObj, videosDataUrl)
+                .then(videoData => {
+                  videoData = JSON.parse(videoData)
+                  videosData.push(...videoData.items)
+                  videoCount += videoData.items.length
+                  resolve(getVideoInfo())
+                })
             })
-          })
         }
       })
     } else { return }
   }
 
   getVideoInfo()
-  .then(() => {
-    videosData.sort((a, b) => a.snippet.publishedAt > b.snippet.publishedAt ? -1 : 1)
-    gatherAverageDuration()
-    gatherLatestData()
-    saveData().then(msg => console.info(msg))
-  })
+    .then(() => {
+      videosData.sort((a, b) => a.snippet.publishedAt > b.snippet.publishedAt ? -1 : 1)
+      gatherAverageDuration()
+      gatherLatestData()
+      saveData().then(msg => console.info(msg))
+    })
 }
 
 function saveData() {
-  const now = Math.round(new Date().getTime()/1000)
+  const now = Math.round(new Date().getTime() / 1000)
   const ttl = now + 604800 // 7 days
 
   const averageData = {
@@ -153,7 +153,7 @@ function saveData() {
   }
 
   // save the average data
-  dynamodb.put(averageData, (err, res) => {})
+  dynamodb.put(averageData, (err, res) => { })
 
   // query the saved durations
   return new Promise(resolve => {
@@ -172,7 +172,7 @@ function saveData() {
           if (durationData.Items.length != 0 && finalData.latestVideoId != durationData.Items[0].videoId) {
 
             createNewGraph(durationData.Items).then(s3Key => {
-              const publishTimestamp = Math.round(new Date(finalData.latestPublishAt).getTime()/1000)
+              const publishTimestamp = Math.round(new Date(finalData.latestPublishAt).getTime() / 1000)
               const twoMonthsAhead = now + 5184000
               const newDuration = {
                 TableName: 'Duration',
@@ -252,7 +252,7 @@ function createNewGraph(graphData) {
 
   return new Promise(resolve => {
     Plotly.getImage(figure, imgOpts, (error, imageStream) => {
-      if (error) return console.log (error)
+      if (error) return console.log(error)
 
       const key = `generated/durationGraph-${finalData.latestVideoId}.jpeg`
 
