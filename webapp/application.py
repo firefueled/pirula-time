@@ -18,6 +18,12 @@ zeroIdKey = boto3.dynamodb.conditions.Key('id').eq(0)
 AU = 149597870700
 # light speed in m/s
 C = 299792458
+# ISS' orbit period in s
+ISS_ORBIT_PERIOD = 5480.4
+# distance to closest start in ly
+CLOSEST_STAR_DISTANCE = 4.22
+# seconds in a year
+SECONDS_IN_YEAR = 365.4 * 24 * 3600
 
 def retrieveData():
     data = {}
@@ -73,9 +79,13 @@ def processData(dbData):
     # Fatos Desconhecidos
     lightPirula = int(pirulaUnit * C / 1000  ** 2)
     pirulaSun2Earth = AU / C / pirulaUnit
+    pirulaISSOrbit = ISS_ORBIT_PERIOD / pirulaUnit
+    pirulaClosestStar = (SECONDS_IN_YEAR / pirulaUnit) * CLOSEST_STAR_DISTANCE
 
     data['unknownFacts']['lightPirula'] = '{:,}'.format(lightPirula).replace(',','.')
+    data['unknownFacts']['pirulaClosestStar'] = '{:,.5g}'.format(pirulaClosestStar).replace(',','.')
     data['unknownFacts']['pirulaSunToEarth'] = '{:.2}'.format(pirulaSun2Earth).replace(',','.')
+    data['unknownFacts']['pirulaISSOrbit'] = '{:.2}'.format(pirulaISSOrbit).replace(',','.')
 
     return data
 
