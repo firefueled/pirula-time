@@ -1,5 +1,0 @@
-node_modules/
-scraper/secrets.js
-*.zip
-env/
-__pycache__
