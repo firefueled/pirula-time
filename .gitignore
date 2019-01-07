@@ -1,5 +1,6 @@
 node_modules/
 scraper/secrets.js
 *.zip
+*.log
 env/
 __pycache__
