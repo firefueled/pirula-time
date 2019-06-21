@@ -4,7 +4,7 @@ import os
 import logging
 import math
 import boto3
-from subjectives import *
+from subjectives import getDurationSubjective, getHateSubjective
 # import pdb
 # pdb.set_trace()
 

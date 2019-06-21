@@ -1,4 +1,5 @@
 # pirula-time
+
 Measures the average duration of Pirula's videos
 
 This is intended to be run on AWS
@@ -9,6 +10,7 @@ The scraper is called hourly, gathers youtube data from the Google APIs, and sto
 The subjective assessment of each relevant value is determined by the `yaml` files in the `webapp/subjectives` dir
 
 ## Contributions/Contribuições
+
 You're welcome to edit the `yaml` files if you have any funny jokes
 Você pode editar os arquivos `yaml` se tiver alguma piada legal
 
